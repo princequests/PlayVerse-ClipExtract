@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
       chunks.push(value);
     }
     const html = new TextDecoder().decode(Buffer.concat(chunks));
-    const title = (html.match(/<title[^>]*>(.*?)<\/title>/is)?.[1] || "").replace(/<[^>]+>/g,"").trim() || u.hostname;
+    const title = (html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] || "").replace(/<[^>]+>/g,"").trim() || u.hostname;
     return NextResponse.json({page:u.href,title,videos:scan(html,u.href),notes:[
       "This finds direct media links and common HTML video sources.",
       "Streaming manifests, login-protected videos and DRM content may not be downloadable as single files."
