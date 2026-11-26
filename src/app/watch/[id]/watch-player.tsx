@@ -351,7 +351,7 @@ export default function WatchPlayer({sources,title,poster,contentKind="",caption
      <div className="pv-control-row">
       <div className="pv-control-group">
        {(player?.kind==="video"||player?.kind==="hls"||isVimeoPlayer||isDailymotionPlayer)&&<button type="button" className="pv-play-button" onClick={()=>isVimeoPlayer?void toggleVimeoPlayback():isDailymotionPlayer?toggleDailymotionPlayback():toggleDirectPlayback()} aria-label="Play or pause">{(isVimeoPlayer?vimeoPlaying:isDailymotionPlayer?dmPlaying:!((directVideoRef.current||videoRef.current)?.paused??true))?"Ⅱ":"▶"}</button>}
-       {(player?.kind==="video"||player?.kind==="hls"||isVimeoPlayer||isDailymotionPlayer)&&<button type="button" className="pv-icon-button" aria-label="Mute or unmute" onClick={()=>{if(isVimeoPlayer)toggleVimeoMute();else if(isDailymotionPlayer)setDailymotionVolume(dmMuted?Math.max(.6,dmVolume):0);else{const v=directVideoRef.current||videoRef.current;if(v)v.muted=!v.muted;}}}>{isVimeoPlayer?(vimeoMuted?"◖×":"◖)):isDailymotionPlayer?(dmMuted?"◖×":"◖"):((directVideoRef.current||videoRef.current)?.muted?"◖×":"◖")}</button>}
+       {(player?.kind==="video"||player?.kind==="hls"||isVimeoPlayer||isDailymotionPlayer)&&<button type="button" className="pv-icon-button" aria-label="Mute or unmute" onClick={()=>{if(isVimeoPlayer)toggleVimeoMute();else if(isDailymotionPlayer)setDailymotionVolume(dmMuted?Math.max(.6,dmVolume):0);else{const v=directVideoRef.current||videoRef.current;if(v)v.muted=!v.muted;}}}>{(isVimeoPlayer?vimeoMuted:isDailymotionPlayer?dmMuted:((directVideoRef.current||videoRef.current)?.muted??false))?"◖×":"◖"}</button>}
        {(player?.kind==="video"||player?.kind==="hls"||isVimeoPlayer||isDailymotionPlayer)&&<label className="pv-volume"><input aria-label="Volume" type="range" min="0" max="1" step=".05" value={isVimeoPlayer?(vimeoMuted?0:vimeoVolume):isDailymotionPlayer?(dmMuted?0:dmVolume):((directVideoRef.current||videoRef.current)?.volume??1)} onChange={e=>{const n=Number(e.target.value);if(isVimeoPlayer)void setVimeoVolumeLevel(n);else if(isDailymotionPlayer)setDailymotionVolume(n);else{const v=directVideoRef.current||videoRef.current;if(v){v.volume=n;v.muted=n===0;}}}}/></label>}
       </div>
       <div className="pv-control-group">
@@ -371,5 +371,4 @@ export default function WatchPlayer({sources,title,poster,contentKind="",caption
    {sources.length>1&&<div className="pv-source-switcher" aria-label="Available playback sources"><span>PLAYING FROM</span>{sources.map((s,i)=><button type="button" key={s.id} className={i===active?"selected":""} onClick={()=>{setActive(i);setFailed(false);setAspectOverride(null);}}>{s.label||s.provider||`Source ${i+1}`}</button>)}</div>}
    {failed&&<p className="pv-player-notice">Playback couldn't start. Please choose another available source.</p>}
   </div>
-}
 }
