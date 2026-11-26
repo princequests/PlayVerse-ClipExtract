@@ -376,7 +376,7 @@ export default function WatchPlayer({sources,title,poster,contentKind="",caption
     {captions.length>0&&(player?.kind==="video"||player?.kind==="hls")&&<div className="pv-caption-action"><button type="button" onClick={()=>{setCaptionsEnabled(v=>!v);setShowCaptionMenu(v=>!v)}} aria-label="Captions">CC</button>{showCaptionMenu&&<div className="playverse-caption-menu"><strong>Captions</strong><label>Language<select value={captionTrackId} onChange={e=>{setCaptionTrackId(e.target.value);setCaptionsEnabled(Boolean(e.target.value));}}><option value="">Off</option>{captions.map(c=><option key={c.id} value={c.id}>{c.label}</option>)}</select></label><label>Size<select value={captionSize} onChange={e=>setCaptionSize(e.target.value)}><option value="small">Small</option><option value="medium">Medium</option><option value="large">Large</option></select></label></div>}</div>}
     <div
      className={`pv-player-controls ${overlayVisible?"pv-controls-visible":"pv-controls-hidden"} ${isExternalDailymotion?"pv-controls-for-embed":""}`}
-     style={isExternalDailymotion?{top:0,bottom:"auto",padding:"12px 16px",background:"linear-gradient(rgba(0,0,0,.72),transparent)",pointerEvents:"auto"}:undefined}
+     style={isExternalDailymotion?{top:"auto",bottom:0,padding:"42px 20px 16px",background:"linear-gradient(transparent,rgba(0,0,0,.88) 45%,rgba(0,0,0,.96))",pointerEvents:"auto"}:undefined}
      onPointerEnter={revealOverlay}
      onPointerMove={revealOverlay}
     >
