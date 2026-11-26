@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
-const FACEBOOK_HOST = /(^|\\.)facebook\\.com$|^fb\\.watch$/i;
+const FACEBOOK_HOST = /(^|\.)facebook\.com$|^fb\.watch$/i;
 
 function decodeHtml(value: string) {
   return value
@@ -88,8 +88,8 @@ export async function GET(request: NextRequest) {
       // A numeric reel/video ID in the page can still be used to form a stable
       // permalink when Facebook's canonical metadata is missing.
       const reelId =
-        html.match(/facebook\\.com\\/(?:reel|videos)\\/(\\d{6,})/i)?.[1] ||
-        html.match(/["'](?:video_id|videoID|story_fbid)["']\\s*:\\s*["']?(\\d{6,})/i)?.[1];
+        html.match(/facebook\.com\/(?:reel|videos)\/(\d{6,})/i)?.[1] ||
+        html.match(/["'](?:video_id|videoID|story_fbid)["']\s*:\s*["']?(\d{6,})/i)?.[1];
       if (reelId) canonical = new URL("https://www.facebook.com/reel/" + reelId);
     }
 
@@ -127,7 +127,7 @@ export async function GET(request: NextRequest) {
 
     // Crucial fallback: always embed the resolved permalink, never the original
     // /share/v/ URL. This is what fixes public share links that oEmbed rejects.
-    if (!embedSrc || /\\/share\\//i.test(embedSrc)) {
+    if (!embedSrc || /\/share\//i.test(embedSrc)) {
       embedSrc =
         "https://www.facebook.com/plugins/video.php?href=" +
         encodeURIComponent(canonical.toString()) +
