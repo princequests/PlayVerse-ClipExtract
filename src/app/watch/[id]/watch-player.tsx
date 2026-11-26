@@ -374,7 +374,12 @@ export default function WatchPlayer({sources,title,poster,contentKind="",caption
      <div className="pv-player-empty"><AlertCircle/><strong>Can't play this source here</strong><p>It may be private, unavailable, or block embedded playback. Try another source if one is available.</p></div>}
     {captions.length>0&&(player?.kind==="video"||player?.kind==="hls")&&<div className={`playverse-caption-overlay caption-${captionSize}`}>{captionsEnabled?captionCue:""}</div>}
     {captions.length>0&&(player?.kind==="video"||player?.kind==="hls")&&<div className="pv-caption-action"><button type="button" onClick={()=>{setCaptionsEnabled(v=>!v);setShowCaptionMenu(v=>!v)}} aria-label="Captions">CC</button>{showCaptionMenu&&<div className="playverse-caption-menu"><strong>Captions</strong><label>Language<select value={captionTrackId} onChange={e=>{setCaptionTrackId(e.target.value);setCaptionsEnabled(Boolean(e.target.value));}}><option value="">Off</option>{captions.map(c=><option key={c.id} value={c.id}>{c.label}</option>)}</select></label><label>Size<select value={captionSize} onChange={e=>setCaptionSize(e.target.value)}><option value="small">Small</option><option value="medium">Medium</option><option value="large">Large</option></select></label></div>}</div>}
-    <div className={`pv-player-controls ${overlayVisible?"pv-controls-visible":"pv-controls-hidden"} ${isExternalDailymotion?"pv-controls-hidden-for-embed":""}`} onPointerEnter={revealOverlay} onPointerMove={revealOverlay}>
+    <div
+     className={`pv-player-controls ${overlayVisible?"pv-controls-visible":"pv-controls-hidden"} ${isExternalDailymotion?"pv-controls-for-embed":""}`}
+     style={isExternalDailymotion?{top:0,bottom:"auto",padding:"12px 16px",background:"linear-gradient(rgba(0,0,0,.72),transparent)",pointerEvents:"auto"}:undefined}
+     onPointerEnter={revealOverlay}
+     onPointerMove={revealOverlay}
+    >
      {(player?.kind==="video"||player?.kind==="hls"||isVimeoPlayer||isDailymotionPlayer)&&<div className="pv-progress-row">
       <span>{formatPlayerTime(isVimeoPlayer?vimeoCurrentTime:isDailymotionPlayer?dmCurrentTime:(directVideoRef.current||videoRef.current)?.currentTime||0)}</span>
       <input aria-label="Video progress" type="range" min="0" max="100" step="0.1" value={isVimeoPlayer?(vimeoDuration?100*vimeoCurrentTime/vimeoDuration:0):isDailymotionPlayer?(dmDuration?100*dmCurrentTime/dmDuration:0):progress} onChange={e=>isVimeoPlayer?void seekVimeo(Number(e.target.value)):isDailymotionPlayer?seekDailymotion(Number(e.target.value)):seekDirect(Number(e.target.value))}/>
