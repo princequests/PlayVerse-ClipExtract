@@ -123,7 +123,6 @@ export default function DailymotionPlayer({
       if (!active || mount.querySelector("iframe")) return;
       const fallbackUrl = new URL(`https://geo.dailymotion.com/player/${encodeURIComponent(playerId)}.html`);
       if (videoId) fallbackUrl.searchParams.set("video", videoId);
-      fallbackUrl.searchParams.set("autoplay", "1");
       if (playlistId) fallbackUrl.searchParams.set("playlist", playlistId);
       fallbackUrl.searchParams.set("autoplay", "1");
       const iframe = document.createElement("iframe");
