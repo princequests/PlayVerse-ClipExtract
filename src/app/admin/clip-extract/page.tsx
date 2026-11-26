@@ -17,7 +17,11 @@ export default function ExtractPage() {
   const [importKind,setImportKind] = useState("News video");
   const [selectedEntry,setSelectedEntry] = useState("");
   const [entries,setEntries] = useState<StudioEntry[]>([]);
-  useEffect(()=>{\n    let active=true;\n    fetch("/api/content").then(r=>r.ok?r.json():[]).then(data=>{if(active&&Array.isArray(data))setEntries(data)}).catch(()=>{});\n    return ()=>{active=false};\n  },[]);
+  useEffect(()=>{
+    let active=true;
+    fetch("/api/content").then(r=>r.ok?r.json():[]).then(data=>{if(active&&Array.isArray(data))setEntries(data)}).catch(()=>{});
+    return ()=>{active=false};
+  },[]);
   const [notes,setNotes] = useState<string[]>([]);
   async function extract(e: React.FormEvent) {
     e.preventDefault(); setLoading(true); setError(""); setMessage(""); setVideos([]);
