@@ -50,7 +50,7 @@ function resolvePlayer(raw:string){
       const videoId=host==="youtu.be"?path.split("/").filter(Boolean)[0]:
         u.searchParams.get("v")||path.match(/\/(?:shorts|embed|live|v)\/([^/?]+)/)?.[1];
       const list=u.searchParams.get("list");
-      if(videoId)return {kind:"iframe" as const,src:`https://www.youtube.com/embed/${encodeURIComponent(videoId)}${list?`?list=${encodeURIComponent(list)}&rel=0&playsinline=1&controls=1&disablekb=0&iv_load_policy=3&showinfo=0`:"?rel=0&playsinline=1&controls=1&disablekb=0&iv_load_policy=3&showinfo=0"}`};
+      if(videoId)return {kind:"iframe" as const,src:`https://www.youtube.com/embed/${encodeURIComponent(videoId)}${list?`?list=${encodeURIComponent(list)}&rel=0&playsinline=1&controls=1&disablekb=0&iv_load_policy=3&showinfo=0&enablejsapi=1`:"?rel=0&playsinline=1&controls=1&disablekb=0&iv_load_policy=3&showinfo=0&enablejsapi=1"}`};
       if(list)return {kind:"iframe" as const,src:`https://www.youtube-nocookie.com/embed/videoseries?list=${encodeURIComponent(list)}&controls=1&disablekb=0&rel=0&iv_load_policy=3&showinfo=0&enablejsapi=1&origin=${encodeURIComponent(typeof window!=="undefined"?window.location.origin:"")}`};
       return null;
     }
@@ -129,6 +129,9 @@ export default function WatchPlayer({sources,title,poster,contentKind="",caption
  const vimeoSdkRef=useRef<VimeoSdkPlayer|null>(null);
  const dailymotionSdkRef=useRef<DailymotionPlayerApi|null>(null);
  const [dmApiReady,setDmApiReady]=useState(false);
+ const [youtubePlaying,setYoutubePlaying]=useState(false);
+ const [youtubeMuted,setYoutubeMuted]=useState(false);
+ const [youtubeVolume,setYoutubeVolume]=useState(100);
  const [dmPlaying,setDmPlaying]=useState(false);
  const [dmCurrentTime,setDmCurrentTime]=useState(0);
  const [dmDuration,setDmDuration]=useState(0);
@@ -165,6 +168,7 @@ export default function WatchPlayer({sources,title,poster,contentKind="",caption
    return()=>controller.abort();
  },[source?.id,source?.url,source?.provider]);
  const isVimeoPlayer=player?.kind==="iframe"&&(/vimeo/i.test(source?.provider||"")||/player\.vimeo\.com/i.test(player.src));
+ const isYouTubePlayer=player?.kind==="iframe"&&(/youtube/i.test(source?.provider||"")||/youtube(?:-nocookie)?\.com\/embed/i.test(player.src));
  const isDailymotionPlayer=player?.kind==="dailymotion";
  const socialProvider=(source?.provider||"").toLowerCase();
  const isSocialPlayer=player?.kind==="iframe"&&/(facebook|instagram|tiktok|^x$|twitter)/i.test(socialProvider);
@@ -187,6 +191,10 @@ export default function WatchPlayer({sources,title,poster,contentKind="",caption
  const openFullscreen=async()=>{const target=playerRef.current;if(!target)return;try{if(document.fullscreenElement){await document.exitFullscreen();}else if(target.requestFullscreen){await target.requestFullscreen();}}catch(error){console.error("Could not enter fullscreen playback:",error);}};
  const toggleTheatre=()=>setTheatre(value=>!value);
  const toggleDailymotionPlayback=()=>{const api=dailymotionSdkRef.current;if(!api)return;void (dmPlaying?api.pause():api.play());};
+ const sendYouTubeCommand=(func:string,args:any[]=[])=>{iframeRef.current?.contentWindow?.postMessage(JSON.stringify({event:"command",func,args}),"*");};
+ const toggleYouTubePlayback=()=>{const next=!youtubePlaying;setYoutubePlaying(next);sendYouTubeCommand(next?"playVideo":"pauseVideo");};
+ const toggleYouTubeMute=()=>{const next=!youtubeMuted;setYoutubeMuted(next);sendYouTubeCommand(next?"mute":"unMute");};
+ const setYouTubeVolume=(value:number)=>{const next=Math.max(0,Math.min(100,value));setYoutubeVolume(next);setYoutubeMuted(next===0);sendYouTubeCommand("setVolume",[next]);if(next===0)sendYouTubeCommand("mute");else sendYouTubeCommand("unMute");};
  const seekDailymotion=(percent:number)=>{const api=dailymotionSdkRef.current;if(api&&dmDuration>0)void api.seek((percent/100)*dmDuration);};
  const setDailymotionVolume=(volume:number)=>{setDmVolume(volume);setDmMuted(volume===0);const api=dailymotionSdkRef.current;if(api)void api.setVolume(volume);};
  const setDailymotionSpeed=(rate:number)=>{setDmRate(rate);const api=dailymotionSdkRef.current;if(api)void api.setPlaybackSpeed(rate);};
@@ -351,9 +359,9 @@ export default function WatchPlayer({sources,title,poster,contentKind="",caption
      </div>}
      <div className="pv-control-row">
       <div className="pv-control-group">
-       {(player?.kind==="video"||player?.kind==="hls"||isVimeoPlayer||isDailymotionPlayer)&&<button type="button" className="pv-play-button" onClick={()=>isVimeoPlayer?void toggleVimeoPlayback():isDailymotionPlayer?toggleDailymotionPlayback():toggleDirectPlayback()} aria-label="Play or pause">{(isVimeoPlayer?vimeoPlaying:isDailymotionPlayer?dmPlaying:!((directVideoRef.current||videoRef.current)?.paused??true))?"Ⅱ":"▶"}</button>}
-        {(player?.kind==="video"||player?.kind==="hls"||isVimeoPlayer||isDailymotionPlayer)&&<button type="button" className="pv-icon-button" aria-label="Mute or unmute" onClick={()=>{if(isVimeoPlayer){toggleVimeoMute();}else if(isDailymotionPlayer){setDailymotionVolume(dmMuted?Math.max(.6,dmVolume):0);}else{const v=directVideoRef.current||videoRef.current;if(v){v.muted=!v.muted;}}}}>{(isVimeoPlayer?vimeoMuted:isDailymotionPlayer?dmMuted:((directVideoRef.current||videoRef.current)?.muted??false))?"Mute":"Sound"}</button>}
-       {(player?.kind==="video"||player?.kind==="hls"||isVimeoPlayer||isDailymotionPlayer)&&<label className="pv-volume"><input aria-label="Volume" type="range" min="0" max="1" step=".05" value={isVimeoPlayer?(vimeoMuted?0:vimeoVolume):isDailymotionPlayer?(dmMuted?0:dmVolume):((directVideoRef.current||videoRef.current)?.volume??1)} onChange={e=>{const n=Number(e.target.value);if(isVimeoPlayer)void setVimeoVolumeLevel(n);else if(isDailymotionPlayer)setDailymotionVolume(n);else{const v=directVideoRef.current||videoRef.current;if(v){v.volume=n;v.muted=n===0;}}}}/></label>}
+       {(player?.kind==="video"||player?.kind==="hls"||isVimeoPlayer||isDailymotionPlayer||isYouTubePlayer)&&<button type="button" className="pv-play-button" onClick={()=>isYouTubePlayer?toggleYouTubePlayback():isVimeoPlayer?void toggleVimeoPlayback():isDailymotionPlayer?toggleDailymotionPlayback():toggleDirectPlayback()} aria-label="Play or pause">{(isYouTubePlayer?youtubePlaying:isVimeoPlayer?vimeoPlaying:isDailymotionPlayer?dmPlaying:!((directVideoRef.current||videoRef.current)?.paused??true))?"Ⅱ":"▶"}</button>}
+        {(player?.kind==="video"||player?.kind==="hls"||isVimeoPlayer||isDailymotionPlayer||isYouTubePlayer)&&<button type="button" className="pv-icon-button" aria-label="Mute or unmute" onClick={()=>{if(isYouTubePlayer)toggleYouTubeMute();else if(isVimeoPlayer){toggleVimeoMute();}else if(isDailymotionPlayer){setDailymotionVolume(dmMuted?Math.max(.6,dmVolume):0);}else{const v=directVideoRef.current||videoRef.current;if(v){v.muted=!v.muted;}}}}>{(isYouTubePlayer?youtubeMuted:isVimeoPlayer?vimeoMuted:isDailymotionPlayer?dmMuted:((directVideoRef.current||videoRef.current)?.muted??false))?"Mute":"Sound"}</button>}
+       {(player?.kind==="video"||player?.kind==="hls"||isVimeoPlayer||isDailymotionPlayer||isYouTubePlayer)&&<label className="pv-volume"><input aria-label="Volume" type="range" min="0" max={isYouTubePlayer?100:1} step={isYouTubePlayer?1:.05} value={isYouTubePlayer?youtubeVolume:isVimeoPlayer?(vimeoMuted?0:vimeoVolume):isDailymotionPlayer?(dmMuted?0:dmVolume):((directVideoRef.current||videoRef.current)?.volume??1)} onChange={e=>{const n=Number(e.target.value);if(isYouTubePlayer)setYouTubeVolume(n);else if(isVimeoPlayer)void setVimeoVolumeLevel(n);else if(isDailymotionPlayer)setDailymotionVolume(n);else{const v=directVideoRef.current||videoRef.current;if(v){v.volume=n;v.muted=n===0;}}}}/></label>}
       </div>
       <div className="pv-control-group">
        {(player?.kind==="video"||player?.kind==="hls"||isVimeoPlayer||isDailymotionPlayer)&&<label className="pv-speed">Speed<select value={isVimeoPlayer?vimeoRate:isDailymotionPlayer?dmRate:speed} onChange={e=>{const n=Number(e.target.value);if(isVimeoPlayer){setVimeoRate(n);void vimeoSdkRef.current?.setPlaybackRate(n).catch(()=>setVimeoRate(1));}else if(isDailymotionPlayer)setDailymotionSpeed(n);else setPlaybackSpeed(String(n));}}><option value=".5">0.5×</option><option value=".75">0.75×</option><option value="1">1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option><option value="2">2×</option></select></label>}
