@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Hls from "hls.js";
 import Link from "next/link";
 import type { DailymotionPlayerApi } from "./dailymotion-player";
+import DailymotionPlayer from "./dailymotion-player";
 import { AlertCircle, Maximize2, Theater, ListVideo, ChevronLeft, ChevronRight, ArrowUpLeft, Share2 } from "lucide-react";
 
 declare global {
@@ -175,8 +176,10 @@ export default function WatchPlayer({sources,title,poster,contentKind="",caption
  },[source?.id,source?.url,source?.provider]);
  const isVimeoPlayer=player?.kind==="iframe"&&(/vimeo/i.test(source?.provider||"")||/player\.vimeo\.com/i.test(player.src));
  const isYouTubePlayer=player?.kind==="iframe"&&(/youtube/i.test(source?.provider||"")||/youtube(?:-nocookie)?\.com\/embed/i.test(player.src));
- const isDailymotionPlayer=false; // Dailymotion is intentionally rendered as a provider iframe.
+ const isDailymotionPlayer=isExternalDailymotion&&dmApiReady;
  const isExternalDailymotion=player?.kind==="iframe"&&(/dailymotion/i.test(source?.provider||"")||/geo\.dailymotion\.com/i.test(player.src));
+ const dailymotionEmbed=useMemo(()=>{if(!isExternalDailymotion||!player)return {videoId:undefined as string|undefined,playlistId:undefined as string|undefined};try{const u=new URL(player.src);return {videoId:u.searchParams.get("video")||undefined,playlistId:u.searchParams.get("playlist")||undefined};}catch{return {videoId:undefined,playlistId:undefined};}},[isExternalDailymotion,player]);
+ const dailymotionPlayerId=process.env.NEXT_PUBLIC_DAILYMOTION_PLAYER_ID?.trim()||"x2tvvg9";
  const socialProvider=(source?.provider||"").toLowerCase();
  const isSocialPlayer=player?.kind==="iframe"&&/(facebook|instagram|tiktok|^x$|twitter)/i.test(socialProvider);
  const sourceUrl=source?.url||"";
@@ -365,7 +368,7 @@ export default function WatchPlayer({sources,title,poster,contentKind="",caption
    <div className={`pv-player-stage ${isPortraitSource?"pv-portrait":"pv-landscape"}`}>
     {!source?<div className="pv-player-empty"><AlertCircle/><strong>No playback source</strong><p>This title has not been given a playable source yet.</p></div>:
      player?.kind==="iframe"?<div className={`pv-provider-stage ${isExternalDailymotion?"pv-external-player-container":""}`}>
-       <iframe ref={iframeRef} key={source.id} src={socialProvider.includes("facebook")?(facebookEmbed?.src||player.src):player.src} title={title} allow="autoplay; encrypted-media; picture-in-picture; fullscreen; web-share" allowFullScreen referrerPolicy={/dailymotion\\.com/i.test(source?.url||"")?"origin":"strict-origin-when-cross-origin"}/>
+       {isExternalDailymotion?<DailymotionPlayer key={source.id} playerId={dailymotionPlayerId} videoId={dailymotionEmbed.videoId} playlistId={dailymotionEmbed.playlistId} onPlayerReady={handleDailymotionReady} onPlayerState={handleDailymotionState}/>:<iframe ref={iframeRef} key={source.id} src={socialProvider.includes("facebook")?(facebookEmbed?.src||player.src):player.src} title={title} allow="autoplay; encrypted-media; picture-in-picture; fullscreen; web-share" allowFullScreen referrerPolicy="strict-origin-when-cross-origin"/>}
        {(/youtube/i.test(source?.provider||"")||/youtube\.com\/embed/i.test(player.src))&&<div className="playverse-provider-title-shield" aria-hidden="true"/>}
        {isVimeoPlayer&&<div className="playverse-vimeo-surface" onPointerMove={revealOverlay} onPointerEnter={revealOverlay} onClick={()=>void toggleVimeoPlayback()} aria-label="Tap to play or pause" role="button" tabIndex={0} onKeyDown={event=>{if(event.key===" "||event.key==="Enter"){event.preventDefault();void toggleVimeoPlayback();}}}/>}
       </div>:
