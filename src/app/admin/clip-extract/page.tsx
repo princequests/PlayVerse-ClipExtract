@@ -14,6 +14,14 @@ export default function ExtractPage() {
   const [message,setMessage] = useState("");
   const [title,setTitle] = useState("");
   const [videos,setVideos] = useState<VideoSource[]>([]);
+  const [importKind,setImportKind] = useState("News video");
+  const [selectedEntry,setSelectedEntry] = useState("");
+  const [entries,setEntries] = useState<StudioEntry[]>([]);
+  useEffect(()=>{
+    let active=true;
+    fetch("/api/content").then(r=>r.ok?r.json():[]).then(data=>{if(active&&Array.isArray(data))setEntries(data)}).catch(()=>{});
+    return ()=>{active=false};
+  },[]);
   const [notes,setNotes] = useState<string[]>([]);
   async function extract(e: React.FormEvent) {
     e.preventDefault(); setLoading(true); setError(""); setMessage(""); setVideos([]);

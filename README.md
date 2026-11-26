@@ -176,3 +176,10 @@ The current product direction and intake rules are documented in [`PLAYVERSE_PRO
 ## Unified Playback and Social Video Intake
 
 See [PLAYVERSE_UNIFIED_PLAYBACK.md](./PLAYVERSE_UNIFIED_PLAYBACK.md) for the shared player design, supported social-source workflow, playlist-to-series behavior, and buffering architecture.
+
+
+## PlayVerse Universal Player
+
+The watch experience uses a shared PlayVerse player shell with a responsive 16:9 landscape and 9:16 portrait stage. Playback is handled by the best available engine for each source: native video/HLS for direct media and provider embeds where required. Controls, frame selection, theatre/fullscreen, playlist navigation and source switching live in the same shell.
+
+Public viewing should keep viewers inside PlayVerse. Source URLs are playback inputs, not prominent outbound calls to action. If a source cannot be embedded or played, show an inline unavailable state and offer another saved source when one exists. Third-party iframe content is cross-origin, so PlayVerse cannot fully intercept navigation or every interaction inside a provider's own embedded interface; use provider embed options and keep all PlayVerse-owned navigation internal.
