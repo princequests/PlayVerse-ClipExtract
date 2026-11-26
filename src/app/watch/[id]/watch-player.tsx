@@ -50,8 +50,8 @@ function resolvePlayer(raw:string){
       const videoId=host==="youtu.be"?path.split("/").filter(Boolean)[0]:
         u.searchParams.get("v")||path.match(/\/(?:shorts|embed|live|v)\/([^/?]+)/)?.[1];
       const list=u.searchParams.get("list");
-      if(videoId)return {kind:"iframe" as const,src:`https://www.youtube.com/embed/${encodeURIComponent(videoId)}${list?`?list=${encodeURIComponent(list)}&rel=0&playsinline=1&controls=1&disablekb=0&iv_load_policy=3&showinfo=0&enablejsapi=1`:"?rel=0&playsinline=1&controls=1&disablekb=0&iv_load_policy=3&showinfo=0&enablejsapi=1"}`};
-      if(list)return {kind:"iframe" as const,src:`https://www.youtube-nocookie.com/embed/videoseries?list=${encodeURIComponent(list)}&controls=1&disablekb=0&rel=0&iv_load_policy=3&showinfo=0&enablejsapi=1&origin=${encodeURIComponent(typeof window!=="undefined"?window.location.origin:"")}`};
+      if(videoId)return {kind:"iframe" as const,src:`https://www.youtube.com/embed/${encodeURIComponent(videoId)}${list?`?list=${encodeURIComponent(list)}&autoplay=1&rel=0&playsinline=1&controls=1&disablekb=0&iv_load_policy=3&showinfo=0&enablejsapi=1`:"?autoplay=1&mute=0&rel=0&playsinline=1&controls=1&disablekb=0&iv_load_policy=3&showinfo=0&enablejsapi=1"}`};
+      if(list)return {kind:"iframe" as const,src:`https://www.youtube-nocookie.com/embed/videoseries?list=${encodeURIComponent(list)}&autoplay=1&mute=0&controls=1&disablekb=0&rel=0&iv_load_policy=3&showinfo=0&enablejsapi=1&origin=${encodeURIComponent(typeof window!=="undefined"?window.location.origin:"")}`};
       return null;
     }
 
@@ -69,12 +69,12 @@ function resolvePlayer(raw:string){
     }
     if(host==="x.com"||host.endsWith(".x.com")||host==="twitter.com"||host.endsWith(".twitter.com")){
       const postId=path.match(/\/status\/(\d+)/)?.[1];
-      if(postId)return {kind:"iframe" as const,src:"https://platform.twitter.com/embed/Tweet.html?id="+postId+"&dnt=true&theme=dark&conversation=none"};
+      if(postId)return {kind:"iframe" as const,src:"https://platform.twitter.com/embed/Tweet.html?id="+postId+"&dnt=true&theme=dark&conversation=none&autoplay=1"};
       return null;
     }
     if(host==="facebook.com"||host.endsWith(".facebook.com")||host==="fb.watch"){
       const cleanUrl=new URL(u.href);["mibextid","__tn__","__cft__","ref","refsrc"].forEach(key=>cleanUrl.searchParams.delete(key));
-      return {kind:"iframe" as const,src:"https://www.facebook.com/plugins/video.php?href="+encodeURIComponent(cleanUrl.toString())+"&show_text=0&width=720&allowfullscreen=true"};
+      return {kind:"iframe" as const,src:"https://www.facebook.com/plugins/video.php?href="+encodeURIComponent(cleanUrl.toString())+"&show_text=0&width=720&allowfullscreen=true&autoplay=1"};
     }
     if(host==="instagram.com"||host.endsWith(".instagram.com")){
       const shortcode=path.match(/\/(?:reel|reels|p|tv)\/([A-Za-z0-9_-]+)/)?.[1];
@@ -88,7 +88,7 @@ function resolvePlayer(raw:string){
     }
     if(host.endsWith("vimeo.com")){
       const id=path.match(/(?:video\/)?(\d+)(?:$|\/)/)?.[1]||path.split("/").filter(Boolean).pop();
-      if(id&&/^\d+$/.test(id))return {kind:"iframe" as const,src:`https://player.vimeo.com/video/${id}?controls=0&title=0&byline=0&portrait=0&dnt=1&api=1&download=0&pip=0`};
+      if(id&&/^\d+$/.test(id))return {kind:"iframe" as const,src:`https://player.vimeo.com/video/${id}?autoplay=1&muted=0&controls=0&title=0&byline=0&portrait=0&dnt=1&api=1&download=0&pip=0`};
     }
     if(host==="geo.dailymotion.com"){
       // New Dailymotion embeds must include a valid Player ID.
@@ -110,14 +110,14 @@ function resolvePlayer(raw:string){
       if(videoId){
         const embed=new URL(`https://geo.dailymotion.com/player/${encodeURIComponent(playerId)}.html`);
         embed.searchParams.set("video",videoId);
-        embed.searchParams.set("autoplay","0");
+        embed.searchParams.set("autoplay","1");
         embed.searchParams.set("mute","0");
         return {kind:"iframe" as const,src:embed.toString()};
       }
       if(playlistId){
         const embed=new URL(`https://geo.dailymotion.com/player/${encodeURIComponent(playerId)}.html`);
         embed.searchParams.set("playlist",playlistId);
-        embed.searchParams.set("autoplay","0");
+        embed.searchParams.set("autoplay","1");
         embed.searchParams.set("mute","0");
         return {kind:"iframe" as const,src:embed.toString()};
       }
@@ -375,8 +375,8 @@ export default function WatchPlayer({sources,title,poster,contentKind="",caption
        {(/youtube/i.test(source?.provider||"")||/youtube\.com\/embed/i.test(player.src))&&<div className="playverse-provider-title-shield" aria-hidden="true"/>}
        {isVimeoPlayer&&<div className="playverse-vimeo-surface" onPointerMove={revealOverlay} onPointerEnter={revealOverlay} onClick={()=>void toggleVimeoPlayback()} aria-label="Tap to play or pause" role="button" tabIndex={0} onKeyDown={event=>{if(event.key===" "||event.key==="Enter"){event.preventDefault();void toggleVimeoPlayback();}}}/>}
       </div>:
-     player?.kind==="video"?<video className="pv-native-video" ref={directVideoRef} key={source.id} src={player.src} playsInline preload="metadata" poster={poster} autoPlay={isDriveNativeVideo} muted={isDriveNativeVideo} onCanPlay={event=>{if(isDriveNativeVideo){const video=event.currentTarget;video.muted=true;void video.play().catch(error=>console.info("Drive muted autoplay requires a user gesture:",error));}}} onClick={toggleDirectPlayback} onTimeUpdate={event=>syncDirectTime(event.currentTarget)} onLoadedMetadata={event=>syncDirectTime(event.currentTarget)} onPlay={()=>{setDirectPlaying(true);handlePlaybackStart();}} onPause={()=>{setDirectPlaying(false);handlePlaybackPause();}} onError={()=>setFailed(true)}/>:
-     player?.kind==="hls"?<video className="pv-native-video" ref={videoRef} playsInline preload="metadata" poster={poster} onClick={toggleDirectPlayback} onTimeUpdate={event=>syncDirectTime(event.currentTarget)} onLoadedMetadata={event=>syncDirectTime(event.currentTarget)} onPlay={handlePlaybackStart} onPause={handlePlaybackPause} onError={()=>setFailed(true)}/>:
+     player?.kind==="video"?<video className="pv-native-video" ref={directVideoRef} key={source.id} src={player.src} playsInline preload="metadata" poster={poster} autoPlay muted={false} onClick={toggleDirectPlayback} onTimeUpdate={event=>syncDirectTime(event.currentTarget)} onLoadedMetadata={event=>syncDirectTime(event.currentTarget)} onPlay={()=>{setDirectPlaying(true);handlePlaybackStart();}} onPause={()=>{setDirectPlaying(false);handlePlaybackPause();}} onError={()=>setFailed(true)}/>:
+     player?.kind==="hls"?<video className="pv-native-video" ref={videoRef} playsInline preload="metadata" poster={poster} autoPlay muted={false} onClick={toggleDirectPlayback} onTimeUpdate={event=>syncDirectTime(event.currentTarget)} onLoadedMetadata={event=>syncDirectTime(event.currentTarget)} onPlay={handlePlaybackStart} onPause={handlePlaybackPause} onError={()=>setFailed(true)}/>:
      <div className="pv-player-empty"><AlertCircle/><strong>Can't play this source here</strong><p>It may be private, unavailable, or block embedded playback. Try another source if one is available.</p></div>}
     {captions.length>0&&(player?.kind==="video"||player?.kind==="hls")&&<div className={`playverse-caption-overlay caption-${captionSize}`}>{captionsEnabled?captionCue:""}</div>}
     {captions.length>0&&(player?.kind==="video"||player?.kind==="hls")&&<div className="pv-caption-action"><button type="button" onClick={()=>{setCaptionsEnabled(v=>!v);setShowCaptionMenu(v=>!v)}} aria-label="Captions">CC</button>{showCaptionMenu&&<div className="playverse-caption-menu"><strong>Captions</strong><label>Language<select value={captionTrackId} onChange={e=>{setCaptionTrackId(e.target.value);setCaptionsEnabled(Boolean(e.target.value));}}><option value="">Off</option>{captions.map(c=><option key={c.id} value={c.id}>{c.label}</option>)}</select></label><label>Size<select value={captionSize} onChange={e=>setCaptionSize(e.target.value)}><option value="small">Small</option><option value="medium">Medium</option><option value="large">Large</option></select></label></div>}</div>}
