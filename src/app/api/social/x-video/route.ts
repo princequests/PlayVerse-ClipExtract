@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
   let statusId = "";
   try {
     const url = new URL(raw);
-    if (!/(^|\.)((x|twitter)\.com)$/.test(url.hostname.toLowerCase())) throw new Error("Unsupported host");
+    if (!/(^|\.)(x|twitter)\.com$/.test(url.hostname.toLowerCase())) throw new Error("Unsupported host");
     statusId = url.pathname.match(/\/status\/(\d+)/)?.[1] || "";
   } catch { return NextResponse.json({error:"Provide a public X post URL."},{status:400}); }
   if (!statusId) return NextResponse.json({error:"This X link does not contain a post ID."},{status:400});
