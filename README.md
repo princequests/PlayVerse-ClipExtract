@@ -157,3 +157,12 @@ The content editor now uses a three-step workflow: **Content → Media → Revie
 ClipExtract is a **Studio-only editorial utility** at `/admin/clip-extract`. It is not linked from the public viewer navigation. From a scan result, choose **Add to Studio** to open a new content draft with the discovered media URL prefilled; inspect the source in the draft to import supported metadata. Use the content format selector for Film, Episode, Short video or News video, and assign the parent Series/Season when applicable. Entries remain Draft unless the editor explicitly changes the publishing status.
 
 The former `/extract` route redirects to the Studio tool. The `/api/extract` scanner remains part of the app and still detects candidate sources; it is not a universal downloader and does not bypass login, DRM or protected streams. No database migration is required for this UI update.
+
+
+## Studio workflow update — verified source changes
+
+The Add Content dialog is a three-stage editor: **Content → Media → Review & Publish**. It keeps each stage focused, requires a title and description before advancing, requires a media source before review, and includes a source/artwork review preview.
+
+ClipExtract is available from PlayVerse Studio at `/admin/clip-extract` only. Editors choose the intended content format (News video, Episode, Short video, etc.) before importing. For each scan result, the editor can either start a new draft or attach the detected URL to an existing content entry. Existing entries retain their current details and source list; the imported URL is appended as a source and opened in the Media step for inspection before saving.
+
+This remains an editorial link/source discovery workflow. It does not bypass DRM, account access, or a provider's restrictions.
