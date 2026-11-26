@@ -166,3 +166,8 @@ The Add Content dialog is a three-stage editor: **Content → Media → Review &
 ClipExtract is available from PlayVerse Studio at `/admin/clip-extract` only. Editors choose the intended content format (News video, Episode, Short video, etc.) before importing. For each scan result, the editor can either start a new draft or attach the detected URL to an existing content entry. Existing entries retain their current details and source list; the imported URL is appended as a source and opened in the Media step for inspection before saving.
 
 This remains an editorial link/source discovery workflow. It does not bypass DRM, account access, or a provider's restrictions.
+
+
+## Product architecture and editorial flow
+
+The current product direction and intake rules are documented in [`PLAYVERSE_PRODUCT_FLOW.md`](./PLAYVERSE_PRODUCT_FLOW.md). This describes the shared content pipeline, source-first editor, provider playback boundaries, ClipExtract handoff, mobile viewer principles, and staged live-stream plan.

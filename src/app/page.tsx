@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import ThemeToggle from "@/components/theme-toggle";
-import { Search, Play, ChevronRight, ChevronLeft, Sparkles, Film, Clapperboard, Music2, Tv, Gamepad2, BookOpen, Radio, Compass, Bookmark, Clock3, Menu, X, ArrowUpRight, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { Search, Play, ChevronRight, ChevronLeft, Sparkles, Film, Clapperboard, Music2, Tv, Gamepad2, BookOpen, Radio, Compass, Bookmark, Clock3, Menu, X, ArrowUpRight, PanelLeftClose, PanelLeftOpen, Newspaper, Youtube } from "lucide-react";
 
 type Item = { id: string; title: string; category: string; kind: string; description: string; image: string; source: string; featured?: boolean; year?: string; duration?: string; };
 
@@ -21,7 +21,8 @@ const initialItems: Item[] = [
 const categories = [
   { name:"Discover", icon:Compass }, { name:"Movies", icon:Film }, { name:"Series", icon:Tv },
   { name:"Anime", icon:Sparkles }, { name:"Animation", icon:Clapperboard }, { name:"Music", icon:Music2 },
-  { name:"Vibes", icon:Radio }, { name:"Documentaries", icon:BookOpen }, { name:"Gaming", icon:Gamepad2 }
+  { name:"Vibes", icon:Radio }, { name:"Documentaries", icon:BookOpen }, { name:"Gaming", icon:Gamepad2 },
+  { name:"YouTube", icon:Youtube }, { name:"News", icon:Newspaper }, { name:"Live", icon:Radio }
 ];
 
 function Card({ item, large=false, saved=false, onSave, onOpen }: { item:Item; large?:boolean; saved?:boolean; onSave?:()=>void; onOpen?:()=>void }) {
@@ -101,6 +102,8 @@ export default function Home() {
   const filtered = useMemo(() => {
     const base=active==="My Collection"?items.filter(x=>savedIds.includes(x.id)):
       active==="Recently Watched"?recentIds.map(id=>items.find(x=>x.id===id)).filter((x):x is Item=>Boolean(x)):
+      active==="YouTube"?items.filter(x=>x.source.toLowerCase()==="youtube"):
+      active==="Live"?items.filter(x=>x.category==="Live"||x.kind==="Live stream"):
       items.filter(x=>active==="Discover"||x.category===active||(active==="Series"&&x.kind==="Series"));
     return base.filter(x=>`${x.title} ${x.category} ${x.description} ${x.kind}`.toLowerCase().includes(query.toLowerCase()));
   }, [items,active,query,savedIds,recentIds]);
@@ -184,6 +187,16 @@ export default function Home() {
         {filtered.length===0 && <div className="empty-state"><Search size={28}/><h3>{active==="My Collection"?"Your collection is empty":active==="Recently Watched"?"Nothing watched yet":"No titles found"}</h3><p>{active==="My Collection"?"Save films and videos with the bookmark icon and they will appear here.":active==="Recently Watched"?"Titles you open will appear here for quick access.":"Try another search or choose a different category."}</p></div>}
         <footer className="footer"><span className="brand-small">PLAYVERSE</span><span>One universe. Infinite ways to play.</span><Link href="/admin">Manage content <ArrowUpRight size={13}/></Link></footer>
       </div>
+      <nav className="mobile-tab-bar" aria-label="Quick navigation">
+        {[
+          {label:"Home",value:"Discover",Icon:Compass},
+          {label:"YouTube",value:"YouTube",Icon:Youtube},
+          {label:"News",value:"News",Icon:Newspaper},
+          {label:"Live",value:"Live",Icon:Radio},
+          {label:"Shorts",value:"Vibes",Icon:Clapperboard},
+          {label:"Saved",value:"My Collection",Icon:Bookmark}
+        ].map(({label,value,Icon})=><button key={value} type="button" className={active===value?"active":""} onClick={()=>{setActive(value);setQuery("");setMobileOpen(false)}} aria-label={label}><Icon size={19}/><span>{label}</span></button>)}
+      </nav>
     </section>
   </main>;
 }
