@@ -165,7 +165,7 @@ export default function WatchPlayer({sources,title,poster,contentKind="",caption
  const isDailymotionPlayer=player?.kind==="dailymotion"||(player?.kind==="iframe"&&(/dailymotion/i.test(source?.provider||"")||/geo\.dailymotion\.com/i.test(player.src)));
  const socialProvider=(source?.provider||"").toLowerCase();
  const isSocialPlayer=player?.kind==="iframe"&&/(facebook|instagram|tiktok|^x$|twitter)/i.test(socialProvider);
- const isPortraitSource=isSocialPlayer&&(/instagram|tiktok/i.test(socialProvider)||/short/i.test(contentKind)||/\/(?:reel|reels|shorts)\//i.test(source?.url||""));
+ const isPortraitSource=isSocialPlayer&&(/instagram|tiktok/i.test(socialProvider)||(/facebook/i.test(socialProvider)&&Boolean(facebookEmbed&&facebookEmbed.ratio<.85))||/\/(?:reel|reels|shorts)\//i.test(source?.url||""));
  const iframeRef=useRef<HTMLIFrameElement>(null);
  const videoRef=useRef<HTMLVideoElement>(null);
  const directVideoRef=useRef<HTMLVideoElement>(null);
