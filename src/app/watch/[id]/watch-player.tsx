@@ -56,15 +56,14 @@ function resolvePlayer(raw:string){
     }
 
     if(host==="drive.google.com"||host==="docs.google.com"){
-      // Drive's preview endpoint is the supported embedded playback route.
-      // The uc download endpoint can return confirmation/HTML rather than media,
-      // which makes the native <video> player fail with a zero duration.
+      // Route public Drive files through PlayVerse's same-origin byte-range
+      // proxy so the existing native player controls can seek and adjust volume.
       const driveId=path.match(/\/file\/d\/([^/]+)/)?.[1]||
         path.match(/\/document\/d\/([^/]+)/)?.[1]||
         u.searchParams.get("id")||
         u.searchParams.get("fileId");
       if(driveId&&/^[a-zA-Z0-9_-]{10,}$/.test(driveId)){
-        return {kind:"iframe" as const,src:"https://drive.google.com/file/d/"+encodeURIComponent(driveId)+"/preview"};
+        return {kind:"video" as const,src:"/api/drive-stream?id="+encodeURIComponent(driveId)};
       }
       return null;
     }
