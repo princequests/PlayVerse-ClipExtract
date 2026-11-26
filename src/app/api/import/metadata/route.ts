@@ -8,10 +8,6 @@ function providerFor(host: string, url: string) {
   if (host === "vimeo.com" || host.endsWith("vimeo.com")) return "Vimeo";
   if (host === "dai.ly" || host.endsWith("dailymotion.com")) return "Dailymotion";
   if (host === "drive.google.com" || host === "docs.google.com") return "Google Drive";
-  if (host === "x.com" || host.endsWith(".x.com") || host === "twitter.com" || host.endsWith(".twitter.com")) return "X";
-  if (host === "facebook.com" || host.endsWith(".facebook.com") || host === "fb.watch") return "Facebook";
-  if (host === "instagram.com" || host.endsWith(".instagram.com")) return "Instagram";
-  if (host === "tiktok.com" || host.endsWith(".tiktok.com")) return "TikTok";
   if (/\.(mp4|m3u8|webm)(\?|$)/i.test(url)) return "Direct video";
   return "External website";
 }
@@ -46,7 +42,7 @@ export async function POST(request: NextRequest) {
         result.title = "YouTube playlist"; result.description = "Imported from a public YouTube playlist.";
         try {
           const xml = await fetchText(`https://www.youtube.com/feeds/videos.xml?playlist_id=${encodeURIComponent(listId)}`);
-          result.items = xmlEntries(xml).reverse();
+          result.items = xmlEntries(xml);
           const feedTitle = decode(xml.match(/<feed[\s\S]*?<title[^>]*>([\s\S]*?)<\/title>/)?.[1] || "").trim();
           if (feedTitle) result.title = feedTitle;
           if (result.items.length) { result.title = result.title || "YouTube playlist"; result.notes.push(`Found ${result.items.length} recent playlist videos. YouTube's public feed may not expose the full playlist.`); }
@@ -108,11 +104,6 @@ export async function POST(request: NextRequest) {
         if (id) { result.imageUrl = `https://drive.google.com/thumbnail?id=${encodeURIComponent(id)}&sz=w1000`; result.description = "Video hosted on Google Drive."; }
         result.notes.push("For playback, set the Drive file sharing permission to 'Anyone with the link'. Private files cannot be played publicly.");
       }
-    } else if (["X","Facebook","Instagram","TikTok"].includes(provider)) {
-      result.kind = "Short video"; result.category = "Vibes";
-      result.description = "Video shared on " + provider + ".";
-      result.title = url.pathname.split("/").filter(Boolean).pop()?.replace(/[-_]/g," ") || provider + " video";
-      result.notes.push("PlayVerse embeds the original platform player. The post must be public and embedding must be allowed; private or login-only videos cannot be bypassed.");
     } else if (provider === "Direct video") {
       result.title = decode(url.pathname.split("/").pop() || "Video").replace(/\.(mp4|m3u8|webm)$/i, "").replace(/[-_]/g, " ");
       result.description = "Direct video source."; result.kind = "Film"; result.category = "Movies";
