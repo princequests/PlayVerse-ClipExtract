@@ -130,6 +130,7 @@ function resolvePlayer(raw:string){
 export default function WatchPlayer({sources,title,poster,contentKind="",captions=[],seriesEntries=[],previousHref,nextHref,seriesHref,seriesTitle,listTitle}:{sources:Source[];title:string;poster:string;contentKind?:string;captions?:CaptionTrack[];seriesEntries?:SeriesEntry[];previousHref?:string;nextHref?:string;seriesHref?:string;seriesTitle?:string;listTitle?:string}){
  const [active,setActive]=useState(()=>Math.max(0,sources.findIndex(s=>s.isPrimary)));
  const [failed,setFailed]=useState(false);
+ const [directPlaying,setDirectPlaying]=useState(false);
  const [vimeoPlaying,setVimeoPlaying]=useState(false);
  const [vimeoCurrentTime,setVimeoCurrentTime]=useState(0);
  const [vimeoDuration,setVimeoDuration]=useState(0);
@@ -222,7 +223,23 @@ export default function WatchPlayer({sources,title,poster,contentKind="",caption
  };
 
  const setPlaybackSpeed=(value:string)=>{setSpeed(value);if(directVideoRef.current)directVideoRef.current.playbackRate=Number(value);if(videoRef.current)videoRef.current.playbackRate=Number(value);};
- const toggleDirectPlayback=()=>{const v=directVideoRef.current||videoRef.current;if(!v)return;if(v.paused){void v.play();}else{v.pause();}};
+ const toggleDirectPlayback=()=>{
+   const v=directVideoRef.current||videoRef.current;
+   if(!v)return;
+   if(v.paused){
+     // Invoke play immediately inside the user's click/tap event so browsers
+     // recognize it as an intentional playback gesture.
+     const playRequest=v.play();
+     if(playRequest&&typeof playRequest.catch==="function"){
+       playRequest.catch(error=>{
+         setDirectPlaying(false);
+         console.warn("PlayVerse video playback was rejected:",error);
+       });
+     }
+   }else{
+     v.pause();
+   }
+ };
  const seekDirect=(value:number)=>{const v=directVideoRef.current||videoRef.current;if(v&&Number.isFinite(v.duration)){v.currentTime=(value/100)*v.duration;setProgress(value);}};
  const syncDirectTime=(v:HTMLVideoElement)=>{
    if(v.videoWidth>0&&v.videoHeight>0)setDetectedPortrait(v.videoHeight>v.videoWidth*1.05);
@@ -357,7 +374,7 @@ export default function WatchPlayer({sources,title,poster,contentKind="",caption
        {(/youtube/i.test(source?.provider||"")||/youtube\.com\/embed/i.test(player.src))&&<div className="playverse-provider-title-shield" aria-hidden="true"/>}
        {isVimeoPlayer&&<div className="playverse-vimeo-surface" onPointerMove={revealOverlay} onPointerEnter={revealOverlay} onClick={()=>void toggleVimeoPlayback()} aria-label="Tap to play or pause" role="button" tabIndex={0} onKeyDown={event=>{if(event.key===" "||event.key==="Enter"){event.preventDefault();void toggleVimeoPlayback();}}}/>}
       </div>:
-     player?.kind==="video"?<video className="pv-native-video" ref={directVideoRef} key={source.id} src={player.src} playsInline preload="metadata" poster={poster} onClick={toggleDirectPlayback} onTimeUpdate={event=>syncDirectTime(event.currentTarget)} onLoadedMetadata={event=>syncDirectTime(event.currentTarget)} onPlay={handlePlaybackStart} onPause={handlePlaybackPause} onError={()=>setFailed(true)}/>:
+     player?.kind==="video"?<video className="pv-native-video" ref={directVideoRef} key={source.id} src={player.src} playsInline preload="metadata" poster={poster} onClick={toggleDirectPlayback} onTimeUpdate={event=>syncDirectTime(event.currentTarget)} onLoadedMetadata={event=>syncDirectTime(event.currentTarget)} onPlay={()=>{setDirectPlaying(true);handlePlaybackStart();}} onPause={()=>{setDirectPlaying(false);handlePlaybackPause();}} onError={()=>setFailed(true)}/>:
      player?.kind==="hls"?<video className="pv-native-video" ref={videoRef} playsInline preload="metadata" poster={poster} onClick={toggleDirectPlayback} onTimeUpdate={event=>syncDirectTime(event.currentTarget)} onLoadedMetadata={event=>syncDirectTime(event.currentTarget)} onPlay={handlePlaybackStart} onPause={handlePlaybackPause} onError={()=>setFailed(true)}/>:
      <div className="pv-player-empty"><AlertCircle/><strong>Can't play this source here</strong><p>It may be private, unavailable, or block embedded playback. Try another source if one is available.</p></div>}
     {captions.length>0&&(player?.kind==="video"||player?.kind==="hls")&&<div className={`playverse-caption-overlay caption-${captionSize}`}>{captionsEnabled?captionCue:""}</div>}
@@ -370,7 +387,7 @@ export default function WatchPlayer({sources,title,poster,contentKind="",caption
      </div>}
      <div className="pv-control-row">
       <div className="pv-control-group">
-       {(player?.kind==="video"||player?.kind==="hls"||isVimeoPlayer||isDailymotionPlayer||isYouTubePlayer)&&<button type="button" className="pv-play-button" onClick={()=>isYouTubePlayer?toggleYouTubePlayback():isVimeoPlayer?void toggleVimeoPlayback():isDailymotionPlayer?toggleDailymotionPlayback():toggleDirectPlayback()} aria-label="Play or pause">{(isYouTubePlayer?youtubePlaying:isVimeoPlayer?vimeoPlaying:isDailymotionPlayer?dmPlaying:!((directVideoRef.current||videoRef.current)?.paused??true))?"Ⅱ":"▶"}</button>}
+       {(player?.kind==="video"||player?.kind==="hls"||isVimeoPlayer||isDailymotionPlayer||isYouTubePlayer)&&<button type="button" className="pv-play-button" onClick={()=>isYouTubePlayer?toggleYouTubePlayback():isVimeoPlayer?void toggleVimeoPlayback():isDailymotionPlayer?toggleDailymotionPlayback():toggleDirectPlayback()} aria-label="Play or pause">{(isYouTubePlayer?youtubePlaying:isVimeoPlayer?vimeoPlaying:isDailymotionPlayer?dmPlaying:directPlaying)?"Ⅱ":"▶"}</button>}
         {(player?.kind==="video"||player?.kind==="hls"||isVimeoPlayer||isDailymotionPlayer||isYouTubePlayer)&&<button type="button" className="pv-icon-button" aria-label="Mute or unmute" onClick={()=>{if(isYouTubePlayer)toggleYouTubeMute();else if(isVimeoPlayer){toggleVimeoMute();}else if(isDailymotionPlayer){setDailymotionVolume(dmMuted?Math.max(.6,dmVolume):0);}else{const v=directVideoRef.current||videoRef.current;if(v){v.muted=!v.muted;}}}}>{(isYouTubePlayer?youtubeMuted:isVimeoPlayer?vimeoMuted:isDailymotionPlayer?dmMuted:((directVideoRef.current||videoRef.current)?.muted??false))?"Mute":"Sound"}</button>}
        {(player?.kind==="video"||player?.kind==="hls"||isVimeoPlayer||isDailymotionPlayer||isYouTubePlayer)&&<label className="pv-volume"><input aria-label="Volume" type="range" min="0" max={isYouTubePlayer?100:1} step={isYouTubePlayer?1:.05} value={isYouTubePlayer?youtubeVolume:isVimeoPlayer?(vimeoMuted?0:vimeoVolume):isDailymotionPlayer?(dmMuted?0:dmVolume):((directVideoRef.current||videoRef.current)?.volume??1)} onChange={e=>{const n=Number(e.target.value);if(isYouTubePlayer)setYouTubeVolume(n);else if(isVimeoPlayer)void setVimeoVolumeLevel(n);else if(isDailymotionPlayer)setDailymotionVolume(n);else{const v=directVideoRef.current||videoRef.current;if(v){v.volume=n;v.muted=n===0;}}}}/></label>}
       </div>
