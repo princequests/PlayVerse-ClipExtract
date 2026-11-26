@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     const iframe=html.match(/src=["']([^"']+)["']/i)?.[1];
     let embedSrc=iframe?new URL(iframe,canonical.origin).toString():"";
     // Normalize plugin iframe and ensure it targets a canonical resolved URL.
-    if(!embedSrc||/share\\//i.test(embedSrc)){
+    if(!embedSrc||/share\//i.test(embedSrc)){
       embedSrc="https://www.facebook.com/plugins/video.php?href="+encodeURIComponent(canonical.toString())+"&show_text=0&width=720&allowfullscreen=true";
     }
     const width=Number(data.width)||720,height=Number(data.height)||405;
