@@ -115,8 +115,7 @@ export default function DailymotionPlayer({
     let player: DailymotionPlayerApi | null = null;
     let fallbackShown = false;
     const fallbackTimer = window.setTimeout(() => {
-      if (!player) {
-        fallbackShown = true;
+      if (!player && !fallbackShown) {
         console.warn("Dailymotion SDK timed out; using hosted iframe fallback.");
         showIframeFallback();
       }
