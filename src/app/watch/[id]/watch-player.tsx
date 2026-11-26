@@ -50,29 +50,33 @@ function resolvePlayer(raw:string){
       const videoId=host==="youtu.be"?path.split("/").filter(Boolean)[0]:
         u.searchParams.get("v")||path.match(/\/(?:shorts|embed|live|v)\/([^/?]+)/)?.[1];
       const list=u.searchParams.get("list");
-      if(videoId)return {kind:"iframe" as const,src:`https://www.youtube-nocookie.com/embed/${encodeURIComponent(videoId)}${list?`?list=${encodeURIComponent(list)}&rel=0&playsinline=1&controls=1&disablekb=0&iv_load_policy=3&showinfo=0`:"?rel=0&playsinline=1&controls=1&disablekb=0&iv_load_policy=3&showinfo=0"}`};
+      if(videoId)return {kind:"iframe" as const,src:`https://www.youtube.com/embed/${encodeURIComponent(videoId)}${list?`?list=${encodeURIComponent(list)}&rel=0&playsinline=1&controls=1&disablekb=0&iv_load_policy=3&showinfo=0`:"?rel=0&playsinline=1&controls=1&disablekb=0&iv_load_policy=3&showinfo=0"}`};
       if(list)return {kind:"iframe" as const,src:`https://www.youtube-nocookie.com/embed/videoseries?list=${encodeURIComponent(list)}&controls=1&disablekb=0&rel=0&iv_load_policy=3&showinfo=0&enablejsapi=1&origin=${encodeURIComponent(typeof window!=="undefined"?window.location.origin:"")}`};
       return null;
     }
-    // Social short-form sources use the platform's official embedded player.
-    // PlayVerse keeps the same outer cinema frame; the source platform still
-    // owns its playback controls, rights checks and availability.
-    if(host==="tiktok.com"||host.endsWith(".tiktok.com")){
-      const videoId=path.match(/\/video\/(\d+)/)?.[1];
-      if(videoId)return {kind:"social-iframe" as const,provider:"TikTok",src:`https://www.tiktok.com/player/v1/${videoId}?controls=1&description=1&music_info=1&loop=0`};
-    }
-    if(host==="instagram.com"||host.endsWith(".instagram.com")){
-      const match=path.match(/\/(?:reel|reels|p|tv)\/([A-Za-z0-9_-]+)/);
-      if(match)return {kind:"social-iframe" as const,provider:"Instagram",src:`https://www.instagram.com/${path.split("/").filter(Boolean)[0]}/${match[1]}/embed/captioned/`};
-    }
-    if(host==="facebook.com"||host.endsWith(".facebook.com")||host==="fb.watch"){
-      if(/\/(?:videos|watch|reel|reels|share)\//i.test(path)||host==="fb.watch"){
-        return {kind:"social-iframe" as const,provider:"Facebook",src:`https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(raw)}&show_text=false&autoplay=false&allowfullscreen=true`};
-      }
+
+    if(host==="drive.google.com"||host==="docs.google.com"){
+      const driveId=path.match(/\/file\/d\/([^/]+)/)?.[1]||u.searchParams.get("id");
+      if(driveId&&/^[a-zA-Z0-9_-]{10,}$/.test(driveId))return {kind:"iframe" as const,src:"https://drive.google.com/file/d/"+encodeURIComponent(driveId)+"/preview"};
+      return null;
     }
     if(host==="x.com"||host.endsWith(".x.com")||host==="twitter.com"||host.endsWith(".twitter.com")){
-      const statusId=path.match(/\/status\/(\d+)/)?.[1];
-      if(statusId)return {kind:"social-iframe" as const,provider:"X",src:`https://platform.twitter.com/embed/Tweet.html?id=${statusId}&dnt=true&theme=dark`};
+      const postId=path.match(/\/status\/(\d+)/)?.[1];
+      if(postId)return {kind:"iframe" as const,src:"https://platform.twitter.com/embed/Tweet.html?id="+postId+"&dnt=true&theme=dark"};
+      return null;
+    }
+    if(host==="facebook.com"||host.endsWith(".facebook.com")||host==="fb.watch"){
+      return {kind:"iframe" as const,src:"https://www.facebook.com/plugins/video.php?href="+encodeURIComponent(u.href)+"&show_text=0&width=1280&allowfullscreen=true"};
+    }
+    if(host==="instagram.com"||host.endsWith(".instagram.com")){
+      const shortcode=path.match(/\/(?:reel|reels|p|tv)\/([A-Za-z0-9_-]+)/)?.[1];
+      if(shortcode)return {kind:"iframe" as const,src:"https://www.instagram.com/p/"+encodeURIComponent(shortcode)+"/embed/"};
+      return null;
+    }
+    if(host==="tiktok.com"||host.endsWith(".tiktok.com")){
+      const videoId=path.match(/\/video\/(\d+)/)?.[1];
+      if(videoId)return {kind:"iframe" as const,src:"https://www.tiktok.com/embed/v2/"+videoId};
+      return null;
     }
     if(host.endsWith("vimeo.com")){
       const id=path.match(/(?:video\/)?(\d+)(?:$|\/)/)?.[1]||path.split("/").filter(Boolean).pop();
@@ -297,19 +301,16 @@ export default function WatchPlayer({sources,title,poster,captions=[],seriesEntr
  return <div className="watch-player-wrap">
   <div className={`watch-player${theatre?" theatre-mode":""}`} ref={playerRef} onPointerMove={revealOverlay} onPointerEnter={revealOverlay} onMouseMove={revealOverlay} onMouseEnter={revealOverlay} >
    {!source?<div className="player-message"><AlertCircle/><p>No playback source has been added for this title.</p></div>:
-    player?.kind==="social-iframe"?<div className="provider-player-frame social-provider-frame" data-provider={player.provider}>
-      <iframe ref={iframeRef} key={source.id} src={player.src} title={`${player.provider} video: ${title}`} allow="autoplay; encrypted-media; picture-in-picture; fullscreen; web-share" referrerPolicy="strict-origin-when-cross-origin" loading="eager" />
-    </div>:
     player?.kind==="dailymotion"?<DailymotionPlayer playerId={player.playerId} videoId={player.videoId} playlistId={player.playlistId} onPlayerReady={handleDailymotionReady} onPlayerState={handleDailymotionState} />:
     player?.kind==="iframe"?<div className={`${!isVimeoPlayer&&!isDailymotionPlayer?"youtube-player-frame":"vimeo-player-frame"} provider-player-frame${isDailymotionPlayer?" dailymotion-player-frame":""}`}>
       <iframe ref={iframeRef} key={source.id} src={player.src} title={title} allow="autoplay; encrypted-media; picture-in-picture; fullscreen" referrerPolicy="strict-origin-when-cross-origin" />
-      {!isVimeoPlayer&&!isDailymotionPlayer&&<div className="playverse-provider-title-shield" aria-hidden="true" />}
+      {(/youtube/i.test(source?.provider||"")||/youtube\.com\/embed/i.test(player.src))&&<div className="playverse-provider-title-shield" aria-hidden="true" />}
       {isVimeoPlayer&&<div className="playverse-vimeo-surface" onPointerMove={revealOverlay} onPointerEnter={revealOverlay} onClick={()=>void toggleVimeoPlayback()} aria-label="Click video to play or pause" role="button" tabIndex={0} onKeyDown={event=>{if(event.key===" "||event.key==="Enter"){event.preventDefault();void toggleVimeoPlayback();}}}/>}
      </div>:
-    player?.kind==="video"?<div className="provider-video-frame"><video ref={directVideoRef} key={source.id} src={player.src} playsInline preload="metadata" poster={poster} onClick={toggleDirectPlayback} onTimeUpdate={event=>syncDirectTime(event.currentTarget)} onLoadedMetadata={event=>syncDirectTime(event.currentTarget)} onPlay={handlePlaybackStart} onPause={handlePlaybackPause} onError={()=>setFailed(true)}/></div>:
+    player?.kind==="video"?<div className="provider-video-frame"><video ref={directVideoRef} key={source.id} src={player.src} playsInline preload="auto" poster={poster} onClick={toggleDirectPlayback} onTimeUpdate={event=>syncDirectTime(event.currentTarget)} onLoadedMetadata={event=>syncDirectTime(event.currentTarget)} onPlay={handlePlaybackStart} onPause={handlePlaybackPause} onError={()=>setFailed(true)}/></div>:
     player?.kind==="hls"?<div className="provider-video-frame"><video ref={videoRef} playsInline preload="metadata" poster={poster} onClick={toggleDirectPlayback} onTimeUpdate={event=>syncDirectTime(event.currentTarget)} onLoadedMetadata={event=>syncDirectTime(event.currentTarget)} onPlay={handlePlaybackStart} onPause={handlePlaybackPause}/></div>:
     player?.kind==="dailymotion-missing-player"?<div className="player-message"><AlertCircle size={36}/><p>Dailymotion now requires a Player ID to embed videos and playlists. Create or select a Player in Dailymotion Studio, then add its ID to <code>NEXT_PUBLIC_DAILYMOTION_PLAYER_ID</code> in your local .env file and restart PlayVerse.</p><a href={source.url} target="_blank" rel="noreferrer">Watch on Dailymotion <ExternalLink size={14}/></a></div>:
-    <div className="player-message"><PlayCircle size={36}/><p>This URL cannot be embedded by PlayVerse. The provider may require its own website/player.</p><a href={source.url} target="_blank" rel="noreferrer">Watch at source <ExternalLink size={14}/></a></div>}
+    <div className="player-message"><PlayCircle size={36}/><p>This source could not be embedded. It may be private, region-restricted, or have embedding disabled.</p><a href={source.url} target="_blank" rel="noreferrer">Watch at source <ExternalLink size={14}/></a></div>}
   {captions.length>0&&(player?.kind==="video"||player?.kind==="hls")&&<div className={`playverse-caption-overlay caption-${captionSize}`} aria-live="polite">{captionsEnabled?captionCue:""}</div>}
   {captions.length>0&&(player?.kind==="video"||player?.kind==="hls")&&<div className="playverse-caption-tools">
     <button type="button" className={`player-tool caption-toggle${captionsEnabled?" active":""}`} onClick={()=>{setCaptionsEnabled(v=>!v);setShowCaptionMenu(v=>!v)}} title="PlayVerse captions">CC</button>

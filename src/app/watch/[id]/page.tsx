@@ -23,7 +23,7 @@ export default async function WatchPage({params}:{params:Promise<{id:string}>}) 
   const isPlaylistChild = item.parent?.kind === "Playlist";
   const seriesOwner = item.kind === "Series" ? item : item.kind === "Season" ? item.parent : item.parent?.kind === "Series" ? item.parent : null;
   const seriesEntriesRaw = isPlaylistChild
-    ? [...(item.parent?.children ?? [])].reverse()
+    ? [...(item.parent?.children ?? [])]
     : item.kind === "Episode"
       ? (item.parent?.children ?? [])
       : item.kind === "Season" || item.kind === "Series"
@@ -54,7 +54,7 @@ export default async function WatchPage({params}:{params:Promise<{id:string}>}) 
   const listTitle = isPlaylistChild ? item.parent?.title : seriesRoot?.title;
   const captions = item.captions.map(c=>({id:c.id,language:c.language,label:c.label,isDefault:c.isDefault,contentText:c.contentText}));
   // A playlist's sibling videos are rendered beneath the description on every playlist item page.
-  const playlistEntries = isPlaylistChild ? [...(item.parent?.children ?? [])].reverse() : item.kind === "Playlist" ? [...item.children].reverse() : [];
+  const playlistEntries = isPlaylistChild ? [...(item.parent?.children ?? [])].reverse() : item.kind === "Playlist" ? [...item.children] : [];
   const displayEntries = isPlaylistChild ? playlistEntries : item.children;
   const displayHeading = isPlaylistChild ? `More videos in ${item.parent?.title ?? "this playlist"}` : item.kind === "Playlist" ? "Videos in this playlist" : item.kind === "Series" || item.kind === "Season" ? "Episodes" : "Related content";
   const playerProps = {sources,title:item.title,poster:item.imageUrl,captions,seriesEntries,previousHref,nextHref,seriesHref,seriesTitle:listTitle,listTitle:isPlaylistChild ? "Playlist" : "Episodes"};
