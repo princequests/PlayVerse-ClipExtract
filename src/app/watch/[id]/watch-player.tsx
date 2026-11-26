@@ -103,23 +103,14 @@ function resolvePlayer(raw:string){
         (u.searchParams.get("playlist")||path.match(/\/playlist\/([^/?]+)/)?.[1]):null;
       const videoId=host==="dai.ly"?path.split("/").filter(Boolean)[0]:
         (u.searchParams.get("video")||path.match(/\/(?:video|embed\/video)\/([^_/?]+)/)?.[1]);
-      // Diagnostic playback path: bypass the custom Dailymotion SDK wrapper
-      // and use Dailymotion's official Geo iframe directly. Native DM controls
-      // remain enabled so this test isolates the SDK integration.
+      // Use the Dailymotion Web SDK so PlayVerse can synchronize playback state
+      // and send play, pause, seek, volume, and speed commands.
       const playerId=process.env.NEXT_PUBLIC_DAILYMOTION_PLAYER_ID?.trim()||"x2tvvg9";
       if(videoId){
-        const embed=new URL(`https://geo.dailymotion.com/player/${encodeURIComponent(playerId)}.html`);
-        embed.searchParams.set("video",videoId);
-        embed.searchParams.set("autoplay","1");
-        embed.searchParams.set("mute","0");
         return {kind:"dailymotion" as const,playerId,videoId};
       }
       if(playlistId){
-        const embed=new URL(`https://geo.dailymotion.com/player/${encodeURIComponent(playerId)}.html`);
-        embed.searchParams.set("playlist",playlistId);
-        embed.searchParams.set("autoplay","1");
-        embed.searchParams.set("mute","0");
-        return {kind:"dailymotion" as const,playerId,videoId};
+        return {kind:"dailymotion" as const,playerId,playlistId};
       }
     }
     if(/\.(mp4|webm|ogv)(?:$|[?#])/i.test(raw))return {kind:"video" as const,src:raw};
