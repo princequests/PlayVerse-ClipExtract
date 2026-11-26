@@ -56,16 +56,15 @@ function resolvePlayer(raw:string){
     }
 
     if(host==="drive.google.com"||host==="docs.google.com"){
-      // Accept Drive's common share, open, and direct-download URL formats.
+      // Drive's preview endpoint is the supported embedded playback route.
+      // The uc download endpoint can return confirmation/HTML rather than media,
+      // which makes the native <video> player fail with a zero duration.
       const driveId=path.match(/\/file\/d\/([^/]+)/)?.[1]||
         path.match(/\/document\/d\/([^/]+)/)?.[1]||
         u.searchParams.get("id")||
         u.searchParams.get("fileId");
       if(driveId&&/^[a-zA-Z0-9_-]{10,}$/.test(driveId)){
-        // The direct media endpoint lets PlayVerse's own seek, volume,
-        // playback-speed and fullscreen controls operate on a native video.
-        // This requires the Drive file to be shared publicly as a playable file.
-        return {kind:"video" as const,src:"https://drive.google.com/uc?export=download&id="+encodeURIComponent(driveId)};
+        return {kind:"iframe" as const,src:"https://drive.google.com/file/d/"+encodeURIComponent(driveId)+"/preview"};
       }
       return null;
     }
