@@ -2514,10 +2514,25 @@ html[data-theme="light"] .dm-control-speed select{background:#fff;color:#1c2635;
 
 /* Aspect-aware social playback: shared PlayVerse controls, responsive portrait canvas. */
 .watch-player.social-source-player{position:relative;isolation:isolate;background:#000;overflow:hidden}
-.watch-player.is-portrait-source{width:min(100%,45vh,540px);max-width:100%;aspect-ratio:9/16;height:auto;min-height:0;margin-inline:auto;border-radius:14px}
+.watch-player.is-portrait-source{width:min(100%,56.25vh,560px);max-width:100%;aspect-ratio:9/16;height:auto;min-height:0;margin-inline:auto;border-radius:14px}
 .watch-player.is-portrait-source .social-provider-frame{position:absolute;inset:0;width:100%;height:100%;overflow:hidden;background:#000}
 .watch-player.is-portrait-source .social-provider-frame iframe{position:absolute;inset:0;width:100%;height:100%;max-width:none;min-height:0;border:0;display:block;background:#000}
 .watch-player.is-portrait-source .social-x iframe{overflow:hidden}
 .watch-player.is-portrait-source:fullscreen{width:100vw;height:100vh;max-width:none;max-height:none;aspect-ratio:auto;border-radius:0}
 .watch-player.is-portrait-source:fullscreen .social-provider-frame iframe{width:min(100%,56.25vh);height:100%;left:50%;right:auto;transform:translateX(-50%)}
 @media(max-width:600px){.watch-player.is-portrait-source{width:min(100%,45vh,540px);border-radius:10px}}
+
+
+/* The PlayVerse outer frame has only two aspect presets, regardless of source engine.
+   The source iframe/video is contained inside this same shell; provider-native controls
+   remain available where cross-origin players require them. */
+.watch-player:not(.theatre-mode):not(:fullscreen){
+  width:100%!important;max-width:1200px!important;height:auto!important;
+  aspect-ratio:16/9!important;margin-inline:auto!important;
+}
+.watch-player.is-portrait-source:not(.theatre-mode):not(:fullscreen){
+  width:min(100%,56.25vh,560px)!important;max-width:100%!important;
+  height:auto!important;min-height:0!important;aspect-ratio:9/16!important;
+  margin-inline:auto!important;
+}
+.watch-player .provider-video-frame video{object-fit:contain!important;background:#000!important}
