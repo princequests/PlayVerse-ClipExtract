@@ -91,7 +91,10 @@ function resolvePlayer(raw:string){
         (u.searchParams.get("playlist")||path.match(/\/playlist\/([^/?]+)/)?.[1]):null;
       const videoId=host==="dai.ly"?path.split("/").filter(Boolean)[0]:
         (u.searchParams.get("video")||path.match(/\/(?:video|embed\/video)\/([^_/?]+)/)?.[1]);
-      const playerId=process.env.NEXT_PUBLIC_DAILYMOTION_PLAYER_ID?.trim();
+      // Restore the Player ID already used by PlayVerse's previously working
+      // Dailymotion integration. Render can override it with an env variable,
+      // but an unset variable must not make public Dailymotion videos fail.
+      const playerId=process.env.NEXT_PUBLIC_DAILYMOTION_PLAYER_ID?.trim()||"x2tvvg9";
       // Keep the selected video AND its playlist together. The playlist powers
       // Dailymotion's native queue/previous/next controls in the hosted player.
       const defaultPlaylistId=process.env.NEXT_PUBLIC_DAILYMOTION_PLAYLIST_ID?.trim()||"x814o4";
