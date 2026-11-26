@@ -6,7 +6,7 @@ export async function GET(request: NextRequest) {
   if(!raw)return NextResponse.json({error:"A Facebook video URL is required."},{status:400});
   let input:URL;
   try{input=new URL(raw);}catch{return NextResponse.json({error:"Invalid URL."},{status:400});}
-  if(!/(^|\\.)facebook\\.com$/.test(input.hostname)&&input.hostname!=="fb.watch")
+  if(input.hostname!=="facebook.com"&&!input.hostname.endsWith(".facebook.com")&&input.hostname!=="fb.watch")
     return NextResponse.json({error:"Only public Facebook video links are supported."},{status:400});
   try{
     // Facebook share/v links are redirect links. Resolve them to the final public
@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     const redirected=await fetch(input.toString(),{redirect:"follow",headers:{"User-Agent":"Mozilla/5.0 (compatible; PlayVerse/1.0)"},signal:AbortSignal.timeout(9000),cache:"no-store"});
     const finalUrl=redirected.url||input.toString();
     const canonical=new URL(finalUrl);
-    if(!/(^|\\.)facebook\\.com$/.test(canonical.hostname))throw new Error("Facebook link redirected outside Facebook.");
+    if(canonical.hostname!=="facebook.com"&&!canonical.hostname.endsWith(".facebook.com"))throw new Error("Facebook link redirected outside Facebook.");
     const oembedUrl="https://www.facebook.com/plugins/video/oembed.json/?url="+encodeURIComponent(canonical.toString());
     const response=await fetch(oembedUrl,{headers:{"User-Agent":"Mozilla/5.0 (compatible; PlayVerse/1.0)"},signal:AbortSignal.timeout(9000),cache:"no-store"});
     if(!response.ok)throw new Error("Facebook did not provide a public video embed. Check the post's audience and embed permissions.");
