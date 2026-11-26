@@ -150,6 +150,17 @@ export default function WatchPlayer({sources,title,poster,contentKind="",caption
  const [showCaptionMenu,setShowCaptionMenu]=useState(false);
  const source=sources[active]||sources[0];
  const player=useMemo(()=>source?resolvePlayer(source.url):null,[source]);
+ const [facebookEmbed,setFacebookEmbed]=useState<{src:string;ratio:number}|null>(null);
+ useEffect(()=>{
+   setFacebookEmbed(null);
+   if(!source||!/(facebook|fb\.watch)/i.test(source.provider))return;
+   const controller=new AbortController();
+   fetch(`/api/social/facebook-embed?url=${encodeURIComponent(source.url)}`,{signal:controller.signal})
+     .then(response=>response.ok?response.json():Promise.reject(new Error("Facebook embed resolution failed")))
+     .then(data=>{if(data.src)setFacebookEmbed({src:data.src,ratio:Number(data.ratio)||16/9});})
+     .catch(error=>{if(error.name!=="AbortError")console.warn("Facebook public embed could not be resolved:",error);});
+   return()=>controller.abort();
+ },[source?.id,source?.url,source?.provider]);
  const isVimeoPlayer=player?.kind==="iframe"&&(/vimeo/i.test(source?.provider||"")||/player\.vimeo\.com/i.test(player.src));
  const isDailymotionPlayer=player?.kind==="dailymotion"||(player?.kind==="iframe"&&(/dailymotion/i.test(source?.provider||"")||/geo\.dailymotion\.com/i.test(player.src)));
  const socialProvider=(source?.provider||"").toLowerCase();
@@ -303,11 +314,11 @@ export default function WatchPlayer({sources,title,poster,contentKind="",caption
    else setFailed(true);
  },[player]);
  return <div className="watch-player-wrap">
-  <div className={`watch-player${theatre?" theatre-mode":""}${isSocialPlayer?" social-source-player":""}${isPortraitSource?" is-portrait-source":""}`} ref={playerRef} onPointerMove={revealOverlay} onPointerEnter={revealOverlay} onMouseMove={revealOverlay} onMouseEnter={revealOverlay} >
+  <div className={`watch-player${theatre?" theatre-mode":""}${isSocialPlayer?" social-source-player":""}${isPortraitSource?" is-portrait-source":""}`} style={isSocialPlayer&&socialProvider.includes("facebook")&&facebookEmbed?{aspectRatio:String(facebookEmbed.ratio)}:undefined} ref={playerRef} onPointerMove={revealOverlay} onPointerEnter={revealOverlay} onMouseMove={revealOverlay} onMouseEnter={revealOverlay} >
    {!source?<div className="player-message"><AlertCircle/><p>No playback source has been added for this title.</p></div>:
     player?.kind==="dailymotion"?<DailymotionPlayer playerId={player.playerId} videoId={player.videoId} playlistId={player.playlistId} onPlayerReady={handleDailymotionReady} onPlayerState={handleDailymotionState} />:
     player?.kind==="iframe"?<div className={`${isSocialPlayer?"social-provider-frame social-"+(socialProvider.includes("facebook")?"facebook":socialProvider.includes("instagram")?"instagram":socialProvider.includes("tiktok")?"tiktok":"x"):!isVimeoPlayer&&!isDailymotionPlayer?"youtube-player-frame":"vimeo-player-frame"} provider-player-frame${isDailymotionPlayer?" dailymotion-player-frame":""}`}>
-      <iframe ref={iframeRef} key={source.id} src={player.src} title={title} allow="autoplay; encrypted-media; picture-in-picture; fullscreen" referrerPolicy="strict-origin-when-cross-origin" />
+      <iframe ref={iframeRef} key={source.id} src={socialProvider.includes("facebook")?(facebookEmbed?.src||player.src):player.src} title={title} allow="autoplay; encrypted-media; picture-in-picture; fullscreen" referrerPolicy="strict-origin-when-cross-origin" />
       {(/youtube/i.test(source?.provider||"")||/youtube\.com\/embed/i.test(player.src))&&<div className="playverse-provider-title-shield" aria-hidden="true" />}
       {isVimeoPlayer&&<div className="playverse-vimeo-surface" onPointerMove={revealOverlay} onPointerEnter={revealOverlay} onClick={()=>void toggleVimeoPlayback()} aria-label="Click video to play or pause" role="button" tabIndex={0} onKeyDown={event=>{if(event.key===" "||event.key==="Enter"){event.preventDefault();void toggleVimeoPlayback();}}}/>}
      </div>:
