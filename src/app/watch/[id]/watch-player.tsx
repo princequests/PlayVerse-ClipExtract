@@ -327,93 +327,49 @@ export default function WatchPlayer({sources,title,poster,contentKind="",caption
    if(video.canPlayType("application/vnd.apple.mpegurl"))video.src=player.src;
    else setFailed(true);
  },[player]);
- return <div className="watch-player-wrap">
-  <div className={`watch-player${theatre?" theatre-mode":""}${isSocialPlayer?" social-source-player":""}${isPortraitSource?" is-portrait-source":""}`} style={{aspectRatio:isPortraitSource?"9 / 16":"16 / 9"}} ref={playerRef} onPointerMove={revealOverlay} onPointerEnter={revealOverlay} onMouseMove={revealOverlay} onMouseEnter={revealOverlay} >
-   {!source?<div className="player-message"><AlertCircle/><p>No playback source has been added for this title.</p></div>:
-    player?.kind==="dailymotion"?<DailymotionPlayer playerId={player.playerId} videoId={player.videoId} playlistId={player.playlistId} onPlayerReady={handleDailymotionReady} onPlayerState={handleDailymotionState} />:
-    player?.kind==="iframe"?<div className={`${isSocialPlayer?"social-provider-frame social-"+(socialProvider.includes("facebook")?"facebook":socialProvider.includes("instagram")?"instagram":socialProvider.includes("tiktok")?"tiktok":"x"):!isVimeoPlayer&&!isDailymotionPlayer?"youtube-player-frame":"vimeo-player-frame"} provider-player-frame${isDailymotionPlayer?" dailymotion-player-frame":""}`}>
-      <iframe ref={iframeRef} key={source.id} src={socialProvider.includes("facebook")?(facebookEmbed?.src||player.src):player.src} title={title} allow="autoplay; encrypted-media; picture-in-picture; fullscreen" referrerPolicy="strict-origin-when-cross-origin" />
-      {(/youtube/i.test(source?.provider||"")||/youtube\.com\/embed/i.test(player.src))&&<div className="playverse-provider-title-shield" aria-hidden="true" />}
-      {isVimeoPlayer&&<div className="playverse-vimeo-surface" onPointerMove={revealOverlay} onPointerEnter={revealOverlay} onClick={()=>void toggleVimeoPlayback()} aria-label="Click video to play or pause" role="button" tabIndex={0} onKeyDown={event=>{if(event.key===" "||event.key==="Enter"){event.preventDefault();void toggleVimeoPlayback();}}}/>}
-     </div>:
-    player?.kind==="video"?<div className="provider-video-frame"><video ref={directVideoRef} key={source.id} src={player.src} playsInline preload="auto" poster={poster} onClick={toggleDirectPlayback} onTimeUpdate={event=>syncDirectTime(event.currentTarget)} onLoadedMetadata={event=>syncDirectTime(event.currentTarget)} onPlay={handlePlaybackStart} onPause={handlePlaybackPause} onError={()=>setFailed(true)}/></div>:
-    player?.kind==="hls"?<div className="provider-video-frame"><video ref={videoRef} playsInline preload="metadata" poster={poster} onClick={toggleDirectPlayback} onTimeUpdate={event=>syncDirectTime(event.currentTarget)} onLoadedMetadata={event=>syncDirectTime(event.currentTarget)} onPlay={handlePlaybackStart} onPause={handlePlaybackPause}/></div>:
-    player?.kind==="dailymotion-missing-player"?<div className="player-message"><AlertCircle size={36}/><p>Dailymotion now requires a Player ID to embed videos and playlists. Create or select a Player in Dailymotion Studio, then add its ID to <code>NEXT_PUBLIC_DAILYMOTION_PLAYER_ID</code> in your local .env file and restart PlayVerse.</p><a href={source.url} target="_blank" rel="noreferrer">Watch on Dailymotion <ExternalLink size={14}/></a></div>:
-    <div className="player-message"><PlayCircle size={36}/><p>This source could not be embedded. It may be private, region-restricted, or have embedding disabled.</p><a href={source.url} target="_blank" rel="noreferrer">Watch at source <ExternalLink size={14}/></a></div>}
-  {captions.length>0&&(player?.kind==="video"||player?.kind==="hls")&&<div className={`playverse-caption-overlay caption-${captionSize}`} aria-live="polite">{captionsEnabled?captionCue:""}</div>}
-  {captions.length>0&&(player?.kind==="video"||player?.kind==="hls")&&<div className="playverse-caption-tools">
-    <button type="button" className={`player-tool caption-toggle${captionsEnabled?" active":""}`} onClick={()=>{setCaptionsEnabled(v=>!v);setShowCaptionMenu(v=>!v)}} title="PlayVerse captions">CC</button>
-    <button type="button" className="player-tool" onClick={()=>setShowCaptionMenu(v=>!v)} title="Caption settings">⚙</button>
-    {showCaptionMenu&&<div className="playverse-caption-menu">
-      <strong>PlayVerse captions</strong>
-      <label>Language<select value={captionTrackId} onChange={e=>{setCaptionTrackId(e.target.value);setCaptionsEnabled(Boolean(e.target.value));}}><option value="">Off</option>{captions.map(c=><option key={c.id} value={c.id}>{c.label}</option>)}</select></label>
-      <label>Text size<select value={captionSize} onChange={e=>setCaptionSize(e.target.value)}><option value="small">Small</option><option value="medium">Medium</option><option value="large">Large</option></select></label>
-      <button type="button" className="player-tool" onClick={()=>setCaptionsEnabled(v=>!v)}>{captionsEnabled?"Turn captions off":"Turn captions on"}</button>
-    </div>}
-  </div>}
-  {typeof document!=="undefined"&&document.fullscreenElement&&<>
-    <div className="playverse-hover-sensor playverse-hover-sensor-top" aria-hidden="true" onPointerEnter={revealOverlay} onPointerMove={revealOverlay}/>
-    <div className="playverse-hover-sensor playverse-hover-sensor-bottom" aria-hidden="true" onPointerEnter={revealOverlay} onPointerMove={revealOverlay}/>
-   </>}
-   {player?.kind!=="dailymotion"&&<nav className={`playverse-player-dock${overlayVisible?" is-visible":" is-hidden"}${!isVimeoPlayer&& !isDailymotionPlayer?"": " vimeo-dock"}`} aria-label="PlayVerse video navigation"
-    onPointerEnter={revealOverlay} onPointerMove={revealOverlay} onMouseEnter={revealOverlay} onMouseMove={revealOverlay} >
-   <div className="playverse-nav-left">
-    {(isVimeoPlayer || isDailymotionPlayer || player?.kind==="video" || player?.kind==="hls")&&<div className="vimeo-dock-controls" aria-label="Playback controls">
-      <button type="button" className="vimeo-dock-play" onClick={()=>isVimeoPlayer?void toggleVimeoPlayback():isDailymotionPlayer?toggleDailymotionPlayback():toggleDirectPlayback()} aria-label="Play or pause" title="Play or pause">{(isVimeoPlayer?vimeoPlaying:isDailymotionPlayer?dmPlaying:!((directVideoRef.current||videoRef.current)?.paused??true))?"Ⅱ":"▶"}</button>
-      <span className="vimeo-dock-time">{formatPlayerTime(isVimeoPlayer?vimeoCurrentTime:isDailymotionPlayer?dmCurrentTime:(directVideoRef.current||videoRef.current)?.currentTime||0)}</span>
-      <input className="vimeo-dock-seek" aria-label="Seek video" type="range" min="0" max="100" step="0.1" value={isVimeoPlayer?(vimeoDuration?Math.min(100,100*vimeoCurrentTime/vimeoDuration):0):isDailymotionPlayer?(dmDuration?Math.min(100,100*dmCurrentTime/dmDuration):0):progress} onChange={event=>isVimeoPlayer?void seekVimeo(Number(event.target.value)):isDailymotionPlayer?seekDailymotion(Number(event.target.value)):seekDirect(Number(event.target.value))}/>
-      <span className="vimeo-dock-time">{formatPlayerTime(isVimeoPlayer?vimeoDuration:isDailymotionPlayer?dmDuration:duration)}</span>
-      <button type="button" className="vimeo-dock-tool" onClick={()=>{if(isVimeoPlayer)toggleVimeoMute();else if(isDailymotionPlayer)setDailymotionVolume(dmMuted?dmVolume||1:0);else{const v=directVideoRef.current||videoRef.current;if(v)v.muted=!v.muted;}}}>{isVimeoPlayer?(vimeoMuted?"Unmute":"Mute"):isDailymotionPlayer?(dmMuted?"Unmute":"Mute"):((directVideoRef.current||videoRef.current)?.muted?"Unmute":"Mute")}</button>
-      <input className="vimeo-dock-volume" aria-label="Volume" type="range" min="0" max="1" step="0.05" value={isVimeoPlayer?(vimeoMuted?0:vimeoVolume):isDailymotionPlayer?(dmMuted?0:dmVolume):((directVideoRef.current||videoRef.current)?.volume??1)} onChange={event=>{const value=Number(event.target.value);if(isVimeoPlayer)void setVimeoVolumeLevel(value);else if(isDailymotionPlayer)setDailymotionVolume(value);else{const v=directVideoRef.current||videoRef.current;if(v){v.volume=value;v.muted=value===0;}}}}/>
-      <label className="vimeo-dock-speed">Speed <select value={isVimeoPlayer?vimeoRate:isDailymotionPlayer?dmRate:speed} onChange={async event=>{const rate=Number(event.target.value);if(isVimeoPlayer){setVimeoRate(rate);try{await vimeoSdkRef.current?.setPlaybackRate(rate);}catch{setVimeoRate(1);}}else if(isDailymotionPlayer)setDailymotionSpeed(rate);else setPlaybackSpeed(String(rate));}}><option value="0.5">0.5×</option><option value="0.75">0.75×</option><option value="1">Normal</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option><option value="2">2×</option></select></label>
-      {(isVimeoPlayer?vimeoBuffering:isDailymotionPlayer?dmBuffering:false)&&<span className="vimeo-dock-buffering">Buffering…</span>}
-    </div>}
-    {seriesHref?<Link href={seriesHref} className="player-tool"><ArrowUpLeft size={16}/> Series overview</Link>:null}
-    {previousHref?<Link href={previousHref} className="player-tool"><ChevronLeft size={16}/> Previous episode</Link>:null}
-    {nextHref?<Link href={nextHref} className="player-tool player-tool-primary">Next episode <ChevronRight size={16}/></Link>:null}
+ return <section className="pv-player-layout" aria-label="PlayVerse media player">
+  <div className={`pv-player-shell${theatre?" pv-theatre":""}`} ref={playerRef} onPointerMove={revealOverlay} onPointerEnter={revealOverlay}>
+   <div className={`pv-player-stage ${isPortraitSource?"pv-portrait":"pv-landscape"}`}>
+    {!source?<div className="pv-player-empty"><AlertCircle/><strong>No playback source</strong><p>This title has not been given a playable source yet.</p></div>:
+     player?.kind==="dailymotion"?<DailymotionPlayer playerId={player.playerId} videoId={player.videoId} playlistId={player.playlistId} onPlayerReady={handleDailymotionReady} onPlayerState={handleDailymotionState}/>:
+     player?.kind==="iframe"?<div className="pv-provider-stage">
+       <iframe ref={iframeRef} key={source.id} src={socialProvider.includes("facebook")?(facebookEmbed?.src||player.src):player.src} title={title} allow="autoplay; encrypted-media; picture-in-picture; fullscreen" referrerPolicy="strict-origin-when-cross-origin"/>
+       {(/youtube/i.test(source?.provider||"")||/youtube\.com\/embed/i.test(player.src))&&<div className="playverse-provider-title-shield" aria-hidden="true"/>}
+       {isVimeoPlayer&&<div className="playverse-vimeo-surface" onPointerMove={revealOverlay} onPointerEnter={revealOverlay} onClick={()=>void toggleVimeoPlayback()} aria-label="Tap to play or pause" role="button" tabIndex={0} onKeyDown={event=>{if(event.key===" "||event.key==="Enter"){event.preventDefault();void toggleVimeoPlayback();}}}/>}
+      </div>:
+     player?.kind==="video"?<video className="pv-native-video" ref={directVideoRef} key={source.id} src={player.src} playsInline preload="metadata" poster={poster} onClick={toggleDirectPlayback} onTimeUpdate={event=>syncDirectTime(event.currentTarget)} onLoadedMetadata={event=>syncDirectTime(event.currentTarget)} onPlay={handlePlaybackStart} onPause={handlePlaybackPause} onError={()=>setFailed(true)}/>:
+     player?.kind==="hls"?<video className="pv-native-video" ref={videoRef} playsInline preload="metadata" poster={poster} onClick={toggleDirectPlayback} onTimeUpdate={event=>syncDirectTime(event.currentTarget)} onLoadedMetadata={event=>syncDirectTime(event.currentTarget)} onPlay={handlePlaybackStart} onPause={handlePlaybackPause} onError={()=>setFailed(true)}/>:
+     <div className="pv-player-empty"><AlertCircle/><strong>Can't play this source here</strong><p>It may be private, unavailable, or block embedded playback. Try another source if one is available.</p></div>}
+    {captions.length>0&&(player?.kind==="video"||player?.kind==="hls")&&<div className={`playverse-caption-overlay caption-${captionSize}`}>{captionsEnabled?captionCue:""}</div>}
+    {captions.length>0&&(player?.kind==="video"||player?.kind==="hls")&&<div className="pv-caption-action"><button type="button" onClick={()=>{setCaptionsEnabled(v=>!v);setShowCaptionMenu(v=>!v)}} aria-label="Captions">CC</button>{showCaptionMenu&&<div className="playverse-caption-menu"><strong>Captions</strong><label>Language<select value={captionTrackId} onChange={e=>{setCaptionTrackId(e.target.value);setCaptionsEnabled(Boolean(e.target.value));}}><option value="">Off</option>{captions.map(c=><option key={c.id} value={c.id}>{c.label}</option>)}</select></label><label>Size<select value={captionSize} onChange={e=>setCaptionSize(e.target.value)}><option value="small">Small</option><option value="medium">Medium</option><option value="large">Large</option></select></label></div>}</div>}
+    <div className={`pv-player-controls ${overlayVisible?"pv-controls-visible":"pv-controls-hidden"}`} onPointerEnter={revealOverlay} onPointerMove={revealOverlay}>
+     {(player?.kind==="video"||player?.kind==="hls"||isVimeoPlayer||isDailymotionPlayer)&&<div className="pv-progress-row">
+      <span>{formatPlayerTime(isVimeoPlayer?vimeoCurrentTime:isDailymotionPlayer?dmCurrentTime:(directVideoRef.current||videoRef.current)?.currentTime||0)}</span>
+      <input aria-label="Video progress" type="range" min="0" max="100" step="0.1" value={isVimeoPlayer?(vimeoDuration?100*vimeoCurrentTime/vimeoDuration:0):isDailymotionPlayer?(dmDuration?100*dmCurrentTime/dmDuration:0):progress} onChange={e=>isVimeoPlayer?void seekVimeo(Number(e.target.value)):isDailymotionPlayer?seekDailymotion(Number(e.target.value)):seekDirect(Number(e.target.value))}/>
+      <span>{formatPlayerTime(isVimeoPlayer?vimeoDuration:isDailymotionPlayer?dmDuration:duration)}</span>
+     </div>}
+     <div className="pv-control-row">
+      <div className="pv-control-group">
+       {(player?.kind==="video"||player?.kind==="hls"||isVimeoPlayer||isDailymotionPlayer)&&<button type="button" className="pv-play-button" onClick={()=>isVimeoPlayer?void toggleVimeoPlayback():isDailymotionPlayer?toggleDailymotionPlayback():toggleDirectPlayback()} aria-label="Play or pause">{(isVimeoPlayer?vimeoPlaying:isDailymotionPlayer?dmPlaying:!((directVideoRef.current||videoRef.current)?.paused??true))?"Ⅱ":"▶"}</button>}
+       {(player?.kind==="video"||player?.kind==="hls"||isVimeoPlayer||isDailymotionPlayer)&&<button type="button" className="pv-icon-button" aria-label="Mute or unmute" onClick={()=>{if(isVimeoPlayer)toggleVimeoMute();else if(isDailymotionPlayer)setDailymotionVolume(dmMuted?Math.max(.6,dmVolume):0);else{const v=directVideoRef.current||videoRef.current;if(v)v.muted=!v.muted;}}}>{isVimeoPlayer?(vimeoMuted?"◖×":"◖)):isDailymotionPlayer?(dmMuted?"◖×":"◖"):((directVideoRef.current||videoRef.current)?.muted?"◖×":"◖")}</button>}
+       {(player?.kind==="video"||player?.kind==="hls"||isVimeoPlayer||isDailymotionPlayer)&&<label className="pv-volume"><input aria-label="Volume" type="range" min="0" max="1" step=".05" value={isVimeoPlayer?(vimeoMuted?0:vimeoVolume):isDailymotionPlayer?(dmMuted?0:dmVolume):((directVideoRef.current||videoRef.current)?.volume??1)} onChange={e=>{const n=Number(e.target.value);if(isVimeoPlayer)void setVimeoVolumeLevel(n);else if(isDailymotionPlayer)setDailymotionVolume(n);else{const v=directVideoRef.current||videoRef.current;if(v){v.volume=n;v.muted=n===0;}}}}/></label>}
+      </div>
+      <div className="pv-control-group">
+       {(player?.kind==="video"||player?.kind==="hls"||isVimeoPlayer||isDailymotionPlayer)&&<label className="pv-speed">Speed<select value={isVimeoPlayer?vimeoRate:isDailymotionPlayer?dmRate:speed} onChange={e=>{const n=Number(e.target.value);if(isVimeoPlayer){setVimeoRate(n);void vimeoSdkRef.current?.setPlaybackRate(n).catch(()=>setVimeoRate(1));}else if(isDailymotionPlayer)setDailymotionSpeed(n);else setPlaybackSpeed(String(n));}}><option value=".5">0.5×</option><option value=".75">0.75×</option><option value="1">1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option><option value="2">2×</option></select></label>}
+       <button type="button" className="pv-frame-button" onClick={()=>setAspectOverride(isPortraitSource?"16:9":"9:16")} aria-label="Switch frame shape">{isPortraitSource?"9:16":"16:9"}</button>
+       {seriesEntries.length>0&&<div className="pv-episode-wrap"><button type="button" className="pv-icon-button" onClick={()=>setShowSeries(v=>!v)} aria-expanded={showSeries} aria-label="Episodes or playlist"><ListVideo size={18}/></button>{showSeries&&<div className="pv-episode-popover"><strong>{seriesTitle||listTitle||"Up next"}</strong>{seriesEntries.map(entry=><Link key={entry.id} href={`/watch/${entry.id}`}>{entry.title}<small>{entry.kind}</small></Link>)}</div>}</div>}
+       {previousHref&&<Link className="pv-icon-button" href={previousHref} aria-label="Previous episode"><ChevronLeft size={18}/></Link>}
+       {nextHref&&<Link className="pv-next-button" href={nextHref}>Next <ChevronRight size={16}/></Link>}
+       {seriesHref&&<Link className="pv-icon-button" href={seriesHref} aria-label="Series details"><ArrowUpLeft size={18}/></Link>}
+       <button type="button" className={`pv-icon-button${theatre?" active":""}`} onClick={toggleTheatre} aria-label="Theatre mode"><Theater size={18}/></button>
+       <button type="button" className="pv-icon-button" onClick={openFullscreen} aria-label="Fullscreen"><Maximize2 size={18}/></button>
+       <button type="button" className="pv-icon-button" onClick={async()=>{try{if(navigator.share)await navigator.share({title,url:window.location.href});else await navigator.clipboard.writeText(window.location.href);}catch{}}} aria-label="Share video"><Share2 size={18}/></button>
+      </div>
+     </div>
+    </div>
    </div>
-   <div className="playverse-nav-right">
-    {seriesEntries.length>0?<div className="player-series-menu"><button type="button" className="player-tool" onClick={()=>setShowSeries(value=>!value)} aria-expanded={showSeries}><ListVideo size={16}/> {listTitle||"Episodes"}</button>{showSeries&&<div className="player-series-popover"><strong>{seriesTitle||"Episodes"}</strong>{seriesEntries.map(entry=><Link key={entry.id} href={`/watch/${entry.id}`}>{entry.title}<span>{entry.kind}</span></Link>)}</div>}</div>:null}
-    <button type="button" className="player-tool" onClick={()=>setAspectOverride(isPortraitSource?"16:9":"9:16")} title={isPortraitSource?"Switch to 16:9 landscape":"Switch to 9:16 portrait"} aria-label="Change video frame ratio">{isPortraitSource?"9:16":"16:9"}</button>
-    <button type="button" className={`player-tool${theatre?" active":""}`} onClick={toggleTheatre}><Theater size={16}/> Theatre</button>
-    <button type="button" className="player-tool" onClick={openFullscreen}><Maximize2 size={16}/> Fullscreen</button>
-   </div>
-  </nav>}
+   {sources.length>1&&<div className="pv-source-switcher" aria-label="Available playback sources"><span>PLAYING FROM</span>{sources.map((s,i)=><button type="button" key={s.id} className={i===active?"selected":""} onClick={()=>{setActive(i);setFailed(false);setAspectOverride(null);}}>{s.label||s.provider||`Source ${i+1}`}</button>)}</div>}
+   {failed&&<p className="pv-player-notice">Playback couldn't start. Please choose another available source.</p>}
   </div>
-
-  {player?.kind === "dailymotion" && <nav className="dailymotion-controls-row" aria-label="Player controls">
-    <div className="dailymotion-controls-label"><span className="dailymotion-controls-dot" />Player controls</div>
-    <div className="dailymotion-controls-playback">
-      <button type="button" className="dailymotion-control-button dm-play-toggle" onClick={toggleDailymotionPlayback} disabled={!dmApiReady} title={dmPlaying ? "Pause" : "Play"} aria-label={dmPlaying ? "Pause video" : "Play video"}>
-        {dmPlaying ? <span aria-hidden="true">Ⅱ</span> : <PlayCircle size={19}/>}
-      </button>
-      <button type="button" className="dailymotion-control-button dm-skip-button" onClick={()=>seekDailymotion(Math.max(0,(dmCurrentTime-10)/Math.max(1,dmDuration)*100))} disabled={!dmApiReady||!dmDuration} title="Back 10 seconds" aria-label="Back 10 seconds"><RotateCcw size={16}/><small>10</small></button>
-      <span className="dm-control-time">{formatPlayerTime(dmCurrentTime)}</span>
-      <input className="dm-control-seek" aria-label="Seek video" type="range" min="0" max={Math.max(1,dmDuration)} step="0.1" value={Math.min(dmCurrentTime,dmDuration||0)} onChange={event=>seekDailymotion(Number(event.target.value)/Math.max(1,dmDuration)*100)} disabled={!dmApiReady||!dmDuration}/>
-      <span className="dm-control-time">{formatPlayerTime(dmDuration)}</span>
-      <button type="button" className="dailymotion-control-button dm-skip-button" onClick={()=>seekDailymotion(Math.min(100,(dmCurrentTime+10)/Math.max(1,dmDuration)*100))} disabled={!dmApiReady||!dmDuration} title="Forward 10 seconds" aria-label="Forward 10 seconds"><RotateCw size={16}/><small>10</small></button>
-      <button type="button" className="dailymotion-control-button" onClick={()=>setDailymotionVolume(dmMuted?Math.max(.5,dmVolume):0)} disabled={!dmApiReady} title={dmMuted?"Unmute":"Mute"} aria-label={dmMuted?"Unmute video":"Mute video"}>{dmMuted?<VolumeX size={17}/>:<Volume2 size={17}/>}</button>
-      <input className="dm-control-volume" aria-label="Volume" type="range" min="0" max="1" step="0.05" value={dmMuted?0:dmVolume} onChange={event=>setDailymotionVolume(Number(event.target.value))} disabled={!dmApiReady}/>
-      <label className="dm-control-speed">Speed <select value={dmRate} onChange={event=>setDailymotionSpeed(Number(event.target.value))} disabled={!dmApiReady}><option value="0.5">0.5×</option><option value="0.75">0.75×</option><option value="1">1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option><option value="1.75">1.75×</option><option value="2">2×</option></select></label>
-      {dmBuffering&&<span className="dm-control-buffering">Buffering…</span>}
-      {!dmApiReady&&<span className="dm-control-note">Native controls remain available in the video</span>}
-    </div>
-    <div className="dailymotion-controls-actions">
-      <button type="button" className="dailymotion-control-button" onClick={()=>setAspectOverride(isPortraitSource?"16:9":"9:16")} title={isPortraitSource?"Switch to 16:9 landscape":"Switch to 9:16 portrait"} aria-label="Change video frame ratio"><span>{isPortraitSource?"9:16":"16:9"}</span></button>
-      {previousHref && <Link href={previousHref} className="dailymotion-control-button" title="Previous video"><ChevronLeft size={17}/><span>Previous</span></Link>}
-      {seriesEntries.length > 0 && <div className="dailymotion-controls-menu-wrap">
-        <button type="button" className="dailymotion-control-button" onClick={() => setShowSeries(value => !value)} aria-expanded={showSeries}><ListVideo size={17}/><span>Playlist</span></button>
-        {showSeries && <div className="dailymotion-controls-popover"><strong>{seriesTitle || listTitle || "Playlist"}</strong>{seriesEntries.map(entry => <Link key={entry.id} href={`/watch/${entry.id}`}>{entry.title}<small>{entry.kind}</small></Link>)}</div>}
-      </div>}
-      {nextHref && <Link href={nextHref} className="dailymotion-control-button" title="Next video"><span>Next</span><ChevronRight size={17}/></Link>}
-      <button type="button" className={`dailymotion-control-button${theatre ? " is-active" : ""}`} onClick={toggleTheatre} title="Theatre mode"><Theater size={17}/><span>Theatre</span></button>
-      <button type="button" className="dailymotion-control-button" onClick={openFullscreen} title="Fullscreen"><Maximize2 size={17}/><span>Fullscreen</span></button>
-      <button type="button" className="dailymotion-control-button" onClick={async () => { const url = window.location.href; try { if (navigator.share) await navigator.share({ title, url }); else { await navigator.clipboard.writeText(url); } } catch { /* User cancelled sharing. */ } }} title="Share video"><Share2 size={17}/><span>Share</span></button>
-      <a className="dailymotion-control-button" href={player.videoId ? `https://www.dailymotion.com/video/${encodeURIComponent(player.videoId)}` : source?.url} target="_blank" rel="noreferrer" title="Open on Dailymotion"><ExternalLink size={17}/><span>Open source</span></a>
-    </div>
-  </nav>}
-
-  {failed&&<p className="player-error">The video could not be loaded. The URL may be private, unavailable, or block direct playback.</p>}
-  {sources.length>1&&<div className="watch-source-picker"><span>PLAYBACK SOURCES</span>{sources.map((s,i)=><button key={s.id} className={i===active?"selected":""} onClick={()=>{setActive(i);setFailed(false)}}>{s.label||s.provider||`Source ${i+1}`}</button>)}</div>}
- </div>
+}
 }
