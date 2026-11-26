@@ -96,20 +96,24 @@ function resolvePlayer(raw:string){
         (u.searchParams.get("playlist")||path.match(/\/playlist\/([^/?]+)/)?.[1]):null;
       const videoId=host==="dai.ly"?path.split("/").filter(Boolean)[0]:
         (u.searchParams.get("video")||path.match(/\/(?:video|embed\/video)\/([^_/?]+)/)?.[1]);
-      // Dailymotion Geo Player requires a valid Player ID from Studio.
+      // Diagnostic playback path: bypass the custom Dailymotion SDK wrapper
+      // and use Dailymotion's official Geo iframe directly. Native DM controls
+      // remain enabled so this test isolates the SDK integration.
       const playerId=process.env.NEXT_PUBLIC_DAILYMOTION_PLAYER_ID?.trim()||"x2tvvg9";
-      // A single video must not be forced into PlayVerse's default playlist.
-      // Keep playlist playback only when the submitted URL explicitly includes it.
-      if(playerId&&(playlistId||videoId)){
-        return {
-          kind:"dailymotion" as const,
-          playerId,
-          videoId:videoId||undefined,
-          playlistId:playlistId||undefined,
-        };
+      if(videoId){
+        const embed=new URL(`https://geo.dailymotion.com/player/${encodeURIComponent(playerId)}.html`);
+        embed.searchParams.set("video",videoId);
+        embed.searchParams.set("autoplay","0");
+        embed.searchParams.set("mute","0");
+        return {kind:"iframe" as const,src:embed.toString()};
       }
-      if(videoId)return {kind:"iframe" as const,src:`https://www.dailymotion.com/embed/video/${encodeURIComponent(videoId)}?autoplay=0&mute=0&controls=1`};
-      if(playlistId)return {kind:"iframe" as const,src:`https://www.dailymotion.com/embed/playlist/${encodeURIComponent(playlistId)}?autoplay=0&mute=0&controls=1`};
+      if(playlistId){
+        const embed=new URL(`https://geo.dailymotion.com/player/${encodeURIComponent(playerId)}.html`);
+        embed.searchParams.set("playlist",playlistId);
+        embed.searchParams.set("autoplay","0");
+        embed.searchParams.set("mute","0");
+        return {kind:"iframe" as const,src:embed.toString()};
+      }
     }
     if(/\.(mp4|webm|ogv)(?:$|[?#])/i.test(raw))return {kind:"video" as const,src:raw};
     if(/\.m3u8(?:$|[?#])/i.test(raw))return {kind:"hls" as const,src:raw};
@@ -342,7 +346,7 @@ export default function WatchPlayer({sources,title,poster,contentKind="",caption
     {!source?<div className="pv-player-empty"><AlertCircle/><strong>No playback source</strong><p>This title has not been given a playable source yet.</p></div>:
      player?.kind==="dailymotion"?<DailymotionPlayer playerId={player.playerId} videoId={player.videoId} playlistId={player.playlistId} onPlayerReady={handleDailymotionReady} onPlayerState={handleDailymotionState}/>:
      player?.kind==="iframe"?<div className="pv-provider-stage">
-       <iframe ref={iframeRef} key={source.id} src={socialProvider.includes("facebook")?(facebookEmbed?.src||player.src):player.src} title={title} allow="autoplay; encrypted-media; picture-in-picture; fullscreen; web-share" allowFullScreen referrerPolicy="strict-origin-when-cross-origin"/>
+       <iframe ref={iframeRef} key={source.id} src={socialProvider.includes("facebook")?(facebookEmbed?.src||player.src):player.src} title={title} allow="autoplay; encrypted-media; picture-in-picture; fullscreen; web-share" allowFullScreen referrerPolicy={/dailymotion\\.com/i.test(source?.url||"")?"origin":"strict-origin-when-cross-origin"}/>
        {(/youtube/i.test(source?.provider||"")||/youtube\.com\/embed/i.test(player.src))&&<div className="playverse-provider-title-shield" aria-hidden="true"/>}
        {isVimeoPlayer&&<div className="playverse-vimeo-surface" onPointerMove={revealOverlay} onPointerEnter={revealOverlay} onClick={()=>void toggleVimeoPlayback()} aria-label="Tap to play or pause" role="button" tabIndex={0} onKeyDown={event=>{if(event.key===" "||event.key==="Enter"){event.preventDefault();void toggleVimeoPlayback();}}}/>}
       </div>:
