@@ -62,15 +62,16 @@ function resolvePlayer(raw:string){
     }
     if(host==="x.com"||host.endsWith(".x.com")||host==="twitter.com"||host.endsWith(".twitter.com")){
       const postId=path.match(/\/status\/(\d+)/)?.[1];
-      if(postId)return {kind:"iframe" as const,src:"https://platform.twitter.com/embed/Tweet.html?id="+postId+"&dnt=true&theme=dark"};
+      if(postId)return {kind:"iframe" as const,src:"https://platform.twitter.com/embed/Tweet.html?id="+postId+"&dnt=true&theme=dark&conversation=none"};
       return null;
     }
     if(host==="facebook.com"||host.endsWith(".facebook.com")||host==="fb.watch"){
-      return {kind:"iframe" as const,src:"https://www.facebook.com/plugins/video.php?href="+encodeURIComponent(u.href)+"&show_text=0&width=1280&allowfullscreen=true"};
+      const cleanUrl=new URL(u.href);["mibextid","__tn__","__cft__","ref","refsrc"].forEach(key=>cleanUrl.searchParams.delete(key));
+      return {kind:"iframe" as const,src:"https://www.facebook.com/plugins/video.php?href="+encodeURIComponent(cleanUrl.toString())+"&show_text=0&width=720&allowfullscreen=true"};
     }
     if(host==="instagram.com"||host.endsWith(".instagram.com")){
       const shortcode=path.match(/\/(?:reel|reels|p|tv)\/([A-Za-z0-9_-]+)/)?.[1];
-      if(shortcode)return {kind:"iframe" as const,src:"https://www.instagram.com/p/"+encodeURIComponent(shortcode)+"/embed/"};
+      if(shortcode){const route=/\/reels?\//i.test(path)?"reel":/\/tv\//i.test(path)?"tv":"p";return {kind:"iframe" as const,src:"https://www.instagram.com/"+route+"/"+encodeURIComponent(shortcode)+"/embed/"};}
       return null;
     }
     if(host==="tiktok.com"||host.endsWith(".tiktok.com")){
@@ -114,7 +115,7 @@ function resolvePlayer(raw:string){
     return null;
   }catch{return null}
 }
-export default function WatchPlayer({sources,title,poster,captions=[],seriesEntries=[],previousHref,nextHref,seriesHref,seriesTitle,listTitle}:{sources:Source[];title:string;poster:string;captions?:CaptionTrack[];seriesEntries?:SeriesEntry[];previousHref?:string;nextHref?:string;seriesHref?:string;seriesTitle?:string;listTitle?:string}){
+export default function WatchPlayer({sources,title,poster,contentKind="",captions=[],seriesEntries=[],previousHref,nextHref,seriesHref,seriesTitle,listTitle}:{sources:Source[];title:string;poster:string;contentKind?:string;captions?:CaptionTrack[];seriesEntries?:SeriesEntry[];previousHref?:string;nextHref?:string;seriesHref?:string;seriesTitle?:string;listTitle?:string}){
  const [active,setActive]=useState(()=>Math.max(0,sources.findIndex(s=>s.isPrimary)));
  const [failed,setFailed]=useState(false);
  const [vimeoPlaying,setVimeoPlaying]=useState(false);
@@ -151,6 +152,9 @@ export default function WatchPlayer({sources,title,poster,captions=[],seriesEntr
  const player=useMemo(()=>source?resolvePlayer(source.url):null,[source]);
  const isVimeoPlayer=player?.kind==="iframe"&&(/vimeo/i.test(source?.provider||"")||/player\.vimeo\.com/i.test(player.src));
  const isDailymotionPlayer=player?.kind==="dailymotion"||(player?.kind==="iframe"&&(/dailymotion/i.test(source?.provider||"")||/geo\.dailymotion\.com/i.test(player.src)));
+ const socialProvider=(source?.provider||"").toLowerCase();
+ const isSocialPlayer=player?.kind==="iframe"&&/(facebook|instagram|tiktok|^x$|twitter)/i.test(socialProvider);
+ const isPortraitSource=isSocialPlayer&&(/instagram|tiktok/i.test(socialProvider)||/short/i.test(contentKind)||/\/(?:reel|reels|shorts)\//i.test(source?.url||""));
  const iframeRef=useRef<HTMLIFrameElement>(null);
  const videoRef=useRef<HTMLVideoElement>(null);
  const directVideoRef=useRef<HTMLVideoElement>(null);
@@ -299,10 +303,10 @@ export default function WatchPlayer({sources,title,poster,captions=[],seriesEntr
    else setFailed(true);
  },[player]);
  return <div className="watch-player-wrap">
-  <div className={`watch-player${theatre?" theatre-mode":""}`} ref={playerRef} onPointerMove={revealOverlay} onPointerEnter={revealOverlay} onMouseMove={revealOverlay} onMouseEnter={revealOverlay} >
+  <div className={`watch-player${theatre?" theatre-mode":""}${isSocialPlayer?" social-source-player":""}${isPortraitSource?" is-portrait-source":""}`} ref={playerRef} onPointerMove={revealOverlay} onPointerEnter={revealOverlay} onMouseMove={revealOverlay} onMouseEnter={revealOverlay} >
    {!source?<div className="player-message"><AlertCircle/><p>No playback source has been added for this title.</p></div>:
     player?.kind==="dailymotion"?<DailymotionPlayer playerId={player.playerId} videoId={player.videoId} playlistId={player.playlistId} onPlayerReady={handleDailymotionReady} onPlayerState={handleDailymotionState} />:
-    player?.kind==="iframe"?<div className={`${!isVimeoPlayer&&!isDailymotionPlayer?"youtube-player-frame":"vimeo-player-frame"} provider-player-frame${isDailymotionPlayer?" dailymotion-player-frame":""}`}>
+    player?.kind==="iframe"?<div className={`${isSocialPlayer?"social-provider-frame social-"+(socialProvider.includes("facebook")?"facebook":socialProvider.includes("instagram")?"instagram":socialProvider.includes("tiktok")?"tiktok":"x"):!isVimeoPlayer&&!isDailymotionPlayer?"youtube-player-frame":"vimeo-player-frame"} provider-player-frame${isDailymotionPlayer?" dailymotion-player-frame":""}`}>
       <iframe ref={iframeRef} key={source.id} src={player.src} title={title} allow="autoplay; encrypted-media; picture-in-picture; fullscreen" referrerPolicy="strict-origin-when-cross-origin" />
       {(/youtube/i.test(source?.provider||"")||/youtube\.com\/embed/i.test(player.src))&&<div className="playverse-provider-title-shield" aria-hidden="true" />}
       {isVimeoPlayer&&<div className="playverse-vimeo-surface" onPointerMove={revealOverlay} onPointerEnter={revealOverlay} onClick={()=>void toggleVimeoPlayback()} aria-label="Click video to play or pause" role="button" tabIndex={0} onKeyDown={event=>{if(event.key===" "||event.key==="Enter"){event.preventDefault();void toggleVimeoPlayback();}}}/>}
