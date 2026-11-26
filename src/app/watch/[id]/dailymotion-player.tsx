@@ -34,7 +34,7 @@ type DailymotionPlayerProps = {
 };
 
 type DailymotionGlobal = {
-  createPlayer: (containerId: string, options: { video?: string; playlist?: string }) => Promise<DailymotionPlayerApi>;
+  createPlayer: (containerId: string, options: { video?: string; playlist?: string; params?: { autoplay?: boolean } }) => Promise<DailymotionPlayerApi>;
 };
 
 declare global {
@@ -123,7 +123,9 @@ export default function DailymotionPlayer({
       if (!active || mount.querySelector("iframe")) return;
       const fallbackUrl = new URL(`https://geo.dailymotion.com/player/${encodeURIComponent(playerId)}.html`);
       if (videoId) fallbackUrl.searchParams.set("video", videoId);
+      fallbackUrl.searchParams.set("autoplay", "1");
       if (playlistId) fallbackUrl.searchParams.set("playlist", playlistId);
+      fallbackUrl.searchParams.set("autoplay", "1");
       const iframe = document.createElement("iframe");
       iframe.src = fallbackUrl.toString();
       iframe.title = "Dailymotion video player";
@@ -145,6 +147,7 @@ export default function DailymotionPlayer({
         const created = await window.dailymotion.createPlayer(mount.id, {
           ...(videoId ? { video: videoId } : {}),
           ...(playlistId ? { playlist: playlistId } : {}),
+          params: { autoplay: true },
         });
 
         // A route change or StrictMode cleanup may happen while createPlayer is
@@ -156,6 +159,13 @@ export default function DailymotionPlayer({
 
         player = created;
         onReadyRef.current?.(player);
+        // Autostart is requested through the official SDK runtime parameter.
+        // Also attempt play after initialization; browsers may still require
+        // a viewer gesture when audible autoplay is blocked.
+        void created.setVolume(1).catch(() => undefined);
+        void created.play().catch((error) => {
+          console.info("Dailymotion autoplay requires a user gesture:", error);
+        });
 
         const refresh = (eventState?: DailymotionState) => {
           if (!active) return;
