@@ -113,13 +113,6 @@ export default function DailymotionPlayer({
 
     let active = true;
     let player: DailymotionPlayerApi | null = null;
-    let fallbackShown = false;
-    const fallbackTimer = window.setTimeout(() => {
-      if (!player && !fallbackShown) {
-        console.warn("Dailymotion SDK timed out; using hosted iframe fallback.");
-        showIframeFallback();
-      }
-    }, 12000);
     const listeners: Array<[string, (state?: any) => void]> = [];
     const mount = document.createElement("div");
     mount.id = `playverse-dm-sdk-${++dailymotionMountSequence}`;
@@ -127,8 +120,7 @@ export default function DailymotionPlayer({
     root.appendChild(mount);
 
     const showIframeFallback = () => {
-      if (!active || fallbackShown || mount.querySelector("iframe")) return;
-      fallbackShown = true;
+      if (!active || mount.querySelector("iframe")) return;
       const fallbackUrl = new URL(`https://geo.dailymotion.com/player/${encodeURIComponent(playerId)}.html`);
       if (videoId) fallbackUrl.searchParams.set("video", videoId);
       if (playlistId) fallbackUrl.searchParams.set("playlist", playlistId);
@@ -159,12 +151,11 @@ export default function DailymotionPlayer({
 
         // A route change or StrictMode cleanup may happen while createPlayer is
         // pending. Never attach that stale instance to a newer React render.
-        if (!active || fallbackShown) {
+        if (!active) {
           try { await created.destroy?.(); } catch { /* stale player teardown */ }
           return;
         }
 
-        window.clearTimeout(fallbackTimer);
         player = created;
         onReadyRef.current?.(player);
         // Autostart is requested through the official SDK runtime parameter.
@@ -205,7 +196,6 @@ export default function DailymotionPlayer({
 
     return () => {
       active = false;
-      window.clearTimeout(fallbackTimer);
       onReadyRef.current?.(null);
       if (player) {
         listeners.forEach(([eventName, handler]) => {
