@@ -91,9 +91,11 @@ function resolvePlayer(raw:string){
       if(id&&/^\d+$/.test(id))return {kind:"iframe" as const,src:`https://player.vimeo.com/video/${id}?autoplay=1&muted=0&controls=0&title=0&byline=0&portrait=0&dnt=1&api=1&download=0&pip=0`};
     }
     if(host==="geo.dailymotion.com"){
-      // New Dailymotion embeds must include a valid Player ID.
+      // Keep Dailymotion as its own hosted player inside PlayVerse's shared responsive frame.
       if(/^\/player\/[^/]+\.html$/i.test(path)&&(u.searchParams.has("video")||u.searchParams.has("playlist"))){
-        return {kind:"dailymotion" as const,playerId:path.match(/^\/player\/([^/]+)\.html$/i)?.[1]||"",videoId:u.searchParams.get("video")||undefined,playlistId:u.searchParams.get("playlist")||undefined};
+        const embed=new URL(u.href);
+        embed.searchParams.set("mute","0");
+        return {kind:"iframe" as const,src:embed.toString()};
       }
     }
     if(host.endsWith("dailymotion.com")||host==="dai.ly"){
@@ -174,6 +176,7 @@ export default function WatchPlayer({sources,title,poster,contentKind="",caption
  const isVimeoPlayer=player?.kind==="iframe"&&(/vimeo/i.test(source?.provider||"")||/player\.vimeo\.com/i.test(player.src));
  const isYouTubePlayer=player?.kind==="iframe"&&(/youtube/i.test(source?.provider||"")||/youtube(?:-nocookie)?\.com\/embed/i.test(player.src));
  const isDailymotionPlayer=player?.kind==="dailymotion";
+ const isExternalDailymotion=player?.kind==="iframe"&&(/dailymotion/i.test(source?.provider||"")||/geo\.dailymotion\.com/i.test(player.src));
  const socialProvider=(source?.provider||"").toLowerCase();
  const isSocialPlayer=player?.kind==="iframe"&&/(facebook|instagram|tiktok|^x$|twitter)/i.test(socialProvider);
  const sourceUrl=source?.url||"";
@@ -362,7 +365,7 @@ export default function WatchPlayer({sources,title,poster,contentKind="",caption
    <div className={`pv-player-stage ${isPortraitSource?"pv-portrait":"pv-landscape"}`}>
     {!source?<div className="pv-player-empty"><AlertCircle/><strong>No playback source</strong><p>This title has not been given a playable source yet.</p></div>:
      player?.kind==="dailymotion"?<DailymotionPlayer playerId={player.playerId} videoId={player.videoId} playlistId={player.playlistId} onPlayerReady={handleDailymotionReady} onPlayerState={handleDailymotionState}/>:
-     player?.kind==="iframe"?<div className="pv-provider-stage">
+     player?.kind==="iframe"?<div className={`pv-provider-stage ${isExternalDailymotion?"pv-external-player-container":""}`}>
        <iframe ref={iframeRef} key={source.id} src={socialProvider.includes("facebook")?(facebookEmbed?.src||player.src):player.src} title={title} allow="autoplay; encrypted-media; picture-in-picture; fullscreen; web-share" allowFullScreen referrerPolicy={/dailymotion\\.com/i.test(source?.url||"")?"origin":"strict-origin-when-cross-origin"}/>
        {(/youtube/i.test(source?.provider||"")||/youtube\.com\/embed/i.test(player.src))&&<div className="playverse-provider-title-shield" aria-hidden="true"/>}
        {isVimeoPlayer&&<div className="playverse-vimeo-surface" onPointerMove={revealOverlay} onPointerEnter={revealOverlay} onClick={()=>void toggleVimeoPlayback()} aria-label="Tap to play or pause" role="button" tabIndex={0} onKeyDown={event=>{if(event.key===" "||event.key==="Enter"){event.preventDefault();void toggleVimeoPlayback();}}}/>}
@@ -372,7 +375,7 @@ export default function WatchPlayer({sources,title,poster,contentKind="",caption
      <div className="pv-player-empty"><AlertCircle/><strong>Can't play this source here</strong><p>It may be private, unavailable, or block embedded playback. Try another source if one is available.</p></div>}
     {captions.length>0&&(player?.kind==="video"||player?.kind==="hls")&&<div className={`playverse-caption-overlay caption-${captionSize}`}>{captionsEnabled?captionCue:""}</div>}
     {captions.length>0&&(player?.kind==="video"||player?.kind==="hls")&&<div className="pv-caption-action"><button type="button" onClick={()=>{setCaptionsEnabled(v=>!v);setShowCaptionMenu(v=>!v)}} aria-label="Captions">CC</button>{showCaptionMenu&&<div className="playverse-caption-menu"><strong>Captions</strong><label>Language<select value={captionTrackId} onChange={e=>{setCaptionTrackId(e.target.value);setCaptionsEnabled(Boolean(e.target.value));}}><option value="">Off</option>{captions.map(c=><option key={c.id} value={c.id}>{c.label}</option>)}</select></label><label>Size<select value={captionSize} onChange={e=>setCaptionSize(e.target.value)}><option value="small">Small</option><option value="medium">Medium</option><option value="large">Large</option></select></label></div>}</div>}
-    <div className={`pv-player-controls ${overlayVisible?"pv-controls-visible":"pv-controls-hidden"}`} onPointerEnter={revealOverlay} onPointerMove={revealOverlay}>
+    <div className={`pv-player-controls ${overlayVisible?"pv-controls-visible":"pv-controls-hidden"} ${isExternalDailymotion?"pv-controls-hidden-for-embed":""}`} onPointerEnter={revealOverlay} onPointerMove={revealOverlay}>
      {(player?.kind==="video"||player?.kind==="hls"||isVimeoPlayer||isDailymotionPlayer)&&<div className="pv-progress-row">
       <span>{formatPlayerTime(isVimeoPlayer?vimeoCurrentTime:isDailymotionPlayer?dmCurrentTime:(directVideoRef.current||videoRef.current)?.currentTime||0)}</span>
       <input aria-label="Video progress" type="range" min="0" max="100" step="0.1" value={isVimeoPlayer?(vimeoDuration?100*vimeoCurrentTime/vimeoDuration:0):isDailymotionPlayer?(dmDuration?100*dmCurrentTime/dmDuration:0):progress} onChange={e=>isVimeoPlayer?void seekVimeo(Number(e.target.value)):isDailymotionPlayer?seekDailymotion(Number(e.target.value)):seekDirect(Number(e.target.value))}/>
