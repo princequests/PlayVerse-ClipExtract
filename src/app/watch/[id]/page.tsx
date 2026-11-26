@@ -57,7 +57,7 @@ export default async function WatchPage({params}:{params:Promise<{id:string}>}) 
   const playlistEntries = isPlaylistChild ? [...(item.parent?.children ?? [])].reverse() : item.kind === "Playlist" ? [...item.children] : [];
   const displayEntries = isPlaylistChild ? playlistEntries : item.children;
   const displayHeading = isPlaylistChild ? `More videos in ${item.parent?.title ?? "this playlist"}` : item.kind === "Playlist" ? "Videos in this playlist" : item.kind === "Series" || item.kind === "Season" ? "Episodes" : "Related content";
-  const playerProps = {sources,title:item.title,poster:item.imageUrl,captions,seriesEntries,previousHref,nextHref,seriesHref,seriesTitle:listTitle,listTitle:isPlaylistChild ? "Playlist" : "Episodes"};
+  const playerProps = {sources,title:item.title,poster:item.imageUrl,contentKind:item.kind,captions,seriesEntries,previousHref,nextHref,seriesHref,seriesTitle:listTitle,listTitle:isPlaylistChild ? "Playlist" : "Episodes"};
 
   return <main className="watch-shell">
     <ViewTracker contentId={item.id}/>
