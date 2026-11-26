@@ -176,10 +176,10 @@ export default function WatchPlayer({sources,title,poster,contentKind="",caption
  },[source?.id,source?.url,source?.provider]);
  const isVimeoPlayer=player?.kind==="iframe"&&(/vimeo/i.test(source?.provider||"")||/player\.vimeo\.com/i.test(player.src));
  const isYouTubePlayer=player?.kind==="iframe"&&(/youtube/i.test(source?.provider||"")||/youtube(?:-nocookie)?\.com\/embed/i.test(player.src));
- const isDailymotionPlayer=isExternalDailymotion&&dmApiReady;
  const isExternalDailymotion=player?.kind==="iframe"&&(/dailymotion/i.test(source?.provider||"")||/geo\.dailymotion\.com/i.test(player.src));
  const dailymotionEmbed=useMemo(()=>{if(!isExternalDailymotion||!player)return {videoId:undefined as string|undefined,playlistId:undefined as string|undefined};try{const u=new URL(player.src);return {videoId:u.searchParams.get("video")||undefined,playlistId:u.searchParams.get("playlist")||undefined};}catch{return {videoId:undefined,playlistId:undefined};}},[isExternalDailymotion,player]);
  const dailymotionPlayerId=process.env.NEXT_PUBLIC_DAILYMOTION_PLAYER_ID?.trim()||"x2tvvg9";
+ const isDailymotionPlayer=isExternalDailymotion&&dmApiReady;
  const socialProvider=(source?.provider||"").toLowerCase();
  const isSocialPlayer=player?.kind==="iframe"&&/(facebook|instagram|tiktok|^x$|twitter)/i.test(socialProvider);
  const sourceUrl=source?.url||"";
