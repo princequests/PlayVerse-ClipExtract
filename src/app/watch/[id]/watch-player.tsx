@@ -54,6 +54,26 @@ function resolvePlayer(raw:string){
       if(list)return {kind:"iframe" as const,src:`https://www.youtube-nocookie.com/embed/videoseries?list=${encodeURIComponent(list)}&controls=1&disablekb=0&rel=0&iv_load_policy=3&showinfo=0&enablejsapi=1&origin=${encodeURIComponent(typeof window!=="undefined"?window.location.origin:"")}`};
       return null;
     }
+    // Social short-form sources use the platform's official embedded player.
+    // PlayVerse keeps the same outer cinema frame; the source platform still
+    // owns its playback controls, rights checks and availability.
+    if(host==="tiktok.com"||host.endsWith(".tiktok.com")){
+      const videoId=path.match(/\/video\/(\d+)/)?.[1];
+      if(videoId)return {kind:"social-iframe" as const,provider:"TikTok",src:`https://www.tiktok.com/player/v1/${videoId}?controls=1&description=1&music_info=1&loop=0`};
+    }
+    if(host==="instagram.com"||host.endsWith(".instagram.com")){
+      const match=path.match(/\/(?:reel|reels|p|tv)\/([A-Za-z0-9_-]+)/);
+      if(match)return {kind:"social-iframe" as const,provider:"Instagram",src:`https://www.instagram.com/${path.split("/").filter(Boolean)[0]}/${match[1]}/embed/captioned/`};
+    }
+    if(host==="facebook.com"||host.endsWith(".facebook.com")||host==="fb.watch"){
+      if(/\/(?:videos|watch|reel|reels|share)\//i.test(path)||host==="fb.watch"){
+        return {kind:"social-iframe" as const,provider:"Facebook",src:`https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(raw)}&show_text=false&autoplay=false&allowfullscreen=true`};
+      }
+    }
+    if(host==="x.com"||host.endsWith(".x.com")||host==="twitter.com"||host.endsWith(".twitter.com")){
+      const statusId=path.match(/\/status\/(\d+)/)?.[1];
+      if(statusId)return {kind:"social-iframe" as const,provider:"X",src:`https://platform.twitter.com/embed/Tweet.html?id=${statusId}&dnt=true&theme=dark`};
+    }
     if(host.endsWith("vimeo.com")){
       const id=path.match(/(?:video\/)?(\d+)(?:$|\/)/)?.[1]||path.split("/").filter(Boolean).pop();
       if(id&&/^\d+$/.test(id))return {kind:"iframe" as const,src:`https://player.vimeo.com/video/${id}?controls=0&title=0&byline=0&portrait=0&dnt=1&api=1&download=0&pip=0`};
@@ -277,6 +297,9 @@ export default function WatchPlayer({sources,title,poster,captions=[],seriesEntr
  return <div className="watch-player-wrap">
   <div className={`watch-player${theatre?" theatre-mode":""}`} ref={playerRef} onPointerMove={revealOverlay} onPointerEnter={revealOverlay} onMouseMove={revealOverlay} onMouseEnter={revealOverlay} >
    {!source?<div className="player-message"><AlertCircle/><p>No playback source has been added for this title.</p></div>:
+    player?.kind==="social-iframe"?<div className="provider-player-frame social-provider-frame" data-provider={player.provider}>
+      <iframe ref={iframeRef} key={source.id} src={player.src} title={`${player.provider} video: ${title}`} allow="autoplay; encrypted-media; picture-in-picture; fullscreen; web-share" referrerPolicy="strict-origin-when-cross-origin" loading="eager" />
+    </div>:
     player?.kind==="dailymotion"?<DailymotionPlayer playerId={player.playerId} videoId={player.videoId} playlistId={player.playlistId} onPlayerReady={handleDailymotionReady} onPlayerState={handleDailymotionState} />:
     player?.kind==="iframe"?<div className={`${!isVimeoPlayer&&!isDailymotionPlayer?"youtube-player-frame":"vimeo-player-frame"} provider-player-frame${isDailymotionPlayer?" dailymotion-player-frame":""}`}>
       <iframe ref={iframeRef} key={source.id} src={player.src} title={title} allow="autoplay; encrypted-media; picture-in-picture; fullscreen" referrerPolicy="strict-origin-when-cross-origin" />

@@ -2505,3 +2505,8 @@ html[data-theme="light"] .dm-control-speed select{background:#fff;color:#1c2635;
 .provider-source-tabs button.selected{border-color:var(--accent,#7657ee);background:color-mix(in srgb,var(--accent,#7657ee) 11%,var(--surface,#fff));color:var(--accent,#7657ee)}
 .provider-extract-tab{border-color:rgba(124,92,255,.35);color:var(--accent,#7657ee)}
 @media(max-width:620px){.provider-source-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.provider-source-tabs button,.provider-extract-tab{min-height:46px;padding:0 8px;font-size:12px}.provider-extract-tab{grid-column:1/-1}}
+
+/* Social-source embeds share PlayVerse's single cinema shell. Provider-owned
+   controls stay inside the iframe; the outer frame remains identical. */
+.social-provider-frame{position:absolute;inset:0;overflow:hidden;background:#000;isolation:isolate;border:0}
+.social-provider-frame iframe{position:absolute;inset:0;width:100%;height:100%;max-width:none;border:0;background:#000;display:block}

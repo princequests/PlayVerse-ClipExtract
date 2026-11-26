@@ -15,10 +15,6 @@ export default function ExtractPage() {
   const [title,setTitle] = useState("");
   const [videos,setVideos] = useState<VideoSource[]>([]);
   const [notes,setNotes] = useState<string[]>([]);
-  const [importKind,setImportKind]=useState(importKinds[0]);
-  const [selectedEntry,setSelectedEntry]=useState("");
-  const [entries,setEntries]=useState<StudioEntry[]>([]);
-  useEffect(()=>{fetch("/api/content").then(r=>r.ok?r.json():[]).then((rows:StudioEntry[])=>setEntries(Array.isArray(rows)?rows:[])).catch(()=>setEntries([]));},[]);
   async function extract(e: React.FormEvent) {
     e.preventDefault(); setLoading(true); setError(""); setMessage(""); setVideos([]);
     try {

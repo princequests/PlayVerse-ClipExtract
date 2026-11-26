@@ -171,3 +171,8 @@ This remains an editorial link/source discovery workflow. It does not bypass DRM
 ## Product architecture and editorial flow
 
 The current product direction and intake rules are documented in [`PLAYVERSE_PRODUCT_FLOW.md`](./PLAYVERSE_PRODUCT_FLOW.md). This describes the shared content pipeline, source-first editor, provider playback boundaries, ClipExtract handoff, mobile viewer principles, and staged live-stream plan.
+
+
+## Unified Playback and Social Video Intake
+
+See [PLAYVERSE_UNIFIED_PLAYBACK.md](./PLAYVERSE_UNIFIED_PLAYBACK.md) for the shared player design, supported social-source workflow, playlist-to-series behavior, and buffering architecture.

@@ -40,6 +40,16 @@ async function publicUrl(raw: string) {
   return u;
 }
 const mediaExt = /\.(mp4|webm|mov|m4v|ogv|3gp)(?:$|[?#])/i;
+function socialCandidate(url: URL) {
+  const host=url.hostname.toLowerCase();
+  let platform="", isVideo=false;
+  if(host==="x.com"||host.endsWith(".x.com")||host==="twitter.com"||host.endsWith(".twitter.com")){platform="X";isVideo=/\/status\/\d+/.test(url.pathname);}
+  else if(host==="tiktok.com"||host.endsWith(".tiktok.com")){platform="TikTok";isVideo=/\/video\/\d+/.test(url.pathname);}
+  else if(host==="instagram.com"||host.endsWith(".instagram.com")){platform="Instagram";isVideo=/\/(?:reel|reels|p|tv)\/[A-Za-z0-9_-]+/.test(url.pathname);}
+  else if(host==="facebook.com"||host.endsWith(".facebook.com")||host==="fb.watch"){platform="Facebook";isVideo=/\/(?:videos|watch|reel|reels|share)\//i.test(url.pathname)||host==="fb.watch";}
+  if(!platform||!isVideo)return null;
+  return {url:url.href,filename:`${platform} public video link`,source:`${platform} embed/source URL (not a downloaded file)`,format:platform.toUpperCase()};
+}
 function link(value: string, base: string) {
   try { const u = new URL(value, base); return ["http:", "https:"].includes(u.protocol) ? u.href : null; } catch { return null; }
 }
@@ -78,8 +88,11 @@ export async function POST(req: NextRequest) {
       response = await fetch(u.href, {signal:controller.signal, redirect:"manual",
         headers:{"User-Agent":"PlayVerse-ClipExtract/1.0","Accept":"text/html,application/xhtml+xml"}});
     } finally { clearTimeout(timeout); }
-    if ([301,302,303,307,308].includes(response.status))
+    if ([301,302,303,307,308].includes(response.status)) {
+      const candidate=socialCandidate(u);
+      if(candidate)return NextResponse.json({page:u.href,title:`${u.hostname} video`,videos:[candidate],notes:["This is a social-platform source link, not a downloaded media file. PlayVerse will use the platform's permitted embed/player when available.","If the post is private, removed, region-limited or blocks embedding, it may not play in PlayVerse."]});
       return NextResponse.json({error:"This page redirects. Please submit the final public URL directly."}, {status:422});
+    }
     if (!response.ok) return NextResponse.json({error:`The page returned HTTP ${response.status}.`}, {status:422});
     const type = response.headers.get("content-type") || "";
     if (!type.includes("text/html") && !type.includes("application/xhtml+xml"))
@@ -94,8 +107,12 @@ export async function POST(req: NextRequest) {
     }
     const html = new TextDecoder().decode(Buffer.concat(chunks));
     const title = (html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] || "").replace(/<[^>]+>/g,"").trim() || u.hostname;
-    return NextResponse.json({page:u.href,title,videos:scan(html,u.href),notes:[
-      "This finds direct media links and common HTML video sources.",
+    const videos=scan(html,u.href);
+    const candidate=socialCandidate(u);
+    if(candidate&&!videos.some(v=>v.url===candidate.url))videos.unshift(candidate);
+    return NextResponse.json({page:u.href,title,videos,notes:[
+      "This finds direct media links and common HTML video sources, and recognizes public social video links for embed-based review.",
+      "A social link is a source reference, not a downloaded or PlayVerse-hosted video. Platform permissions, privacy and embed restrictions still apply.",
       "Streaming manifests, login-protected videos and DRM content may not be downloadable as single files."
     ]});
   } catch (e) {
