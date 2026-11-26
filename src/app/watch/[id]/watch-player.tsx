@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Hls from "hls.js";
 import Link from "next/link";
 import DailymotionPlayer, { type DailymotionPlayerApi } from "./dailymotion-player";
-import { ExternalLink, PlayCircle, AlertCircle, Maximize2, Theater, PictureInPicture2, ListVideo, ChevronLeft, ChevronRight, ArrowUpLeft, Share2, Volume2, VolumeX, RotateCcw, RotateCw } from "lucide-react";
+import { AlertCircle, Maximize2, Theater, ListVideo, ChevronLeft, ChevronRight, ArrowUpLeft, Share2 } from "lucide-react";
 
 declare global {
  interface Window {
