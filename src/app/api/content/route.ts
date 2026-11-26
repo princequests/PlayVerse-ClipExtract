@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
       where: {
         ...(status ? { status } : {}), ...(category ? { category } : {}),
         ...(kind ? { kind } : {}),
-        ...(parentId === "root" ? { parentId: null } : parentId ? { parentId } : {}),
+        ...(parentId === "root" || (status === "Published" && !parentId) ? { parentId: null } : parentId ? { parentId } : {}),
         ...(q ? { OR: [{ title: { contains: q, mode: "insensitive" } }, { description: { contains: q, mode: "insensitive" } }, { category: { contains: q, mode: "insensitive" } }] } : {})
       },
       include: { captions: true, sources: { orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }] }, children: { include: { captions: true, sources: true }, orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] } },
