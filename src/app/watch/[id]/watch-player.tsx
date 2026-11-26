@@ -96,19 +96,16 @@ function resolvePlayer(raw:string){
         (u.searchParams.get("playlist")||path.match(/\/playlist\/([^/?]+)/)?.[1]):null;
       const videoId=host==="dai.ly"?path.split("/").filter(Boolean)[0]:
         (u.searchParams.get("video")||path.match(/\/(?:video|embed\/video)\/([^_/?]+)/)?.[1]);
-      // Restore the Player ID already used by PlayVerse's previously working
-      // Dailymotion integration. Render can override it with an env variable,
-      // but an unset variable must not make public Dailymotion videos fail.
+      // Dailymotion Geo Player requires a valid Player ID from Studio.
       const playerId=process.env.NEXT_PUBLIC_DAILYMOTION_PLAYER_ID?.trim()||"x2tvvg9";
-      // Keep the selected video AND its playlist together. The playlist powers
-      // Dailymotion's native queue/previous/next controls in the hosted player.
-      const defaultPlaylistId=process.env.NEXT_PUBLIC_DAILYMOTION_PLAYLIST_ID?.trim()||"x814o4";
+      // A single video must not be forced into PlayVerse's default playlist.
+      // Keep playlist playback only when the submitted URL explicitly includes it.
       if(playerId&&(playlistId||videoId)){
         return {
           kind:"dailymotion" as const,
           playerId,
           videoId:videoId||undefined,
-          playlistId:playlistId||defaultPlaylistId,
+          playlistId:playlistId||undefined,
         };
       }
       if(videoId)return {kind:"iframe" as const,src:`https://www.dailymotion.com/embed/video/${encodeURIComponent(videoId)}?autoplay=0&mute=0&controls=1`};
