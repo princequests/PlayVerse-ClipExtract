@@ -57,8 +57,8 @@ function resolvePlayer(raw:string){
 
     if(host==="drive.google.com"||host==="docs.google.com"){
       // Accept Drive's common share, open, and direct-download URL formats.
-      const driveId=path.match(/\\/file\\/d\\/([^/]+)/)?.[1]||
-        path.match(/\\/document\\/d\\/([^/]+)/)?.[1]||
+      const driveId=path.match(/\/file\/d\/([^/]+)/)?.[1]||
+        path.match(/\/document\/d\/([^/]+)/)?.[1]||
         u.searchParams.get("id")||
         u.searchParams.get("fileId");
       if(driveId&&/^[a-zA-Z0-9_-]{10,}$/.test(driveId)){
