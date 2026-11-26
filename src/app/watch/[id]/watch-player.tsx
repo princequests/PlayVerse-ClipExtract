@@ -112,14 +112,14 @@ function resolvePlayer(raw:string){
         embed.searchParams.set("video",videoId);
         embed.searchParams.set("autoplay","1");
         embed.searchParams.set("mute","0");
-        return {kind:"iframe" as const,src:embed.toString()};
+        return {kind:"dailymotion" as const,playerId,videoId};
       }
       if(playlistId){
         const embed=new URL(`https://geo.dailymotion.com/player/${encodeURIComponent(playerId)}.html`);
         embed.searchParams.set("playlist",playlistId);
         embed.searchParams.set("autoplay","1");
         embed.searchParams.set("mute","0");
-        return {kind:"iframe" as const,src:embed.toString()};
+        return {kind:"dailymotion" as const,playerId,videoId};
       }
     }
     if(/\.(mp4|webm|ogv)(?:$|[?#])/i.test(raw))return {kind:"video" as const,src:raw};
