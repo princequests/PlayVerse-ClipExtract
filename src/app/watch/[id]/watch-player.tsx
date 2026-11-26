@@ -56,8 +56,17 @@ function resolvePlayer(raw:string){
     }
 
     if(host==="drive.google.com"||host==="docs.google.com"){
-      const driveId=path.match(/\/file\/d\/([^/]+)/)?.[1]||u.searchParams.get("id");
-      if(driveId&&/^[a-zA-Z0-9_-]{10,}$/.test(driveId))return {kind:"iframe" as const,src:"https://drive.google.com/file/d/"+encodeURIComponent(driveId)+"/preview"};
+      // Accept Drive's common share, open, and direct-download URL formats.
+      const driveId=path.match(/\\/file\\/d\\/([^/]+)/)?.[1]||
+        path.match(/\\/document\\/d\\/([^/]+)/)?.[1]||
+        u.searchParams.get("id")||
+        u.searchParams.get("fileId");
+      if(driveId&&/^[a-zA-Z0-9_-]{10,}$/.test(driveId)){
+        // The direct media endpoint lets PlayVerse's own seek, volume,
+        // playback-speed and fullscreen controls operate on a native video.
+        // This requires the Drive file to be shared publicly as a playable file.
+        return {kind:"video" as const,src:"https://drive.google.com/uc?export=download&id="+encodeURIComponent(driveId)};
+      }
       return null;
     }
     if(host==="x.com"||host.endsWith(".x.com")||host==="twitter.com"||host.endsWith(".twitter.com")){
