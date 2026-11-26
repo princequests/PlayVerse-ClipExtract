@@ -148,3 +148,12 @@ No database migration is needed for Clip Extract.
 - The endpoint accepts public HTTP(S) pages, blocks private/reserved addresses, rejects redirects, and limits page scans to 2 MB / 12 seconds.
 - For production, configure outbound network restrictions and rate limiting at the hosting layer; DNS validation alone is not a complete defense against DNS rebinding.
 - Use only media you own or have permission to access and download.
+
+
+## Studio workflow update — ClipExtract and guided entry
+
+The content editor now uses a three-step workflow: **Content → Media → Review & publish**. Editors add core metadata first, manage playback sources and subtitles in the media step, then choose Draft/Published/Scheduled/Archived and homepage featuring in the final review.
+
+ClipExtract is a **Studio-only editorial utility** at `/admin/clip-extract`. It is not linked from the public viewer navigation. From a scan result, choose **Add to Studio** to open a new content draft with the discovered media URL prefilled; inspect the source in the draft to import supported metadata. Use the content format selector for Film, Episode, Short video or News video, and assign the parent Series/Season when applicable. Entries remain Draft unless the editor explicitly changes the publishing status.
+
+The former `/extract` route redirects to the Studio tool. The `/api/extract` scanner remains part of the app and still detects candidate sources; it is not a universal downloader and does not bypass login, DRM or protected streams. No database migration is required for this UI update.

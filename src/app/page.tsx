@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import ThemeToggle from "@/components/theme-toggle";
-import { ScanSearch, Search, Play, ChevronRight, ChevronLeft, Sparkles, Film, Clapperboard, Music2, Tv, Gamepad2, BookOpen, Radio, Compass, Bookmark, Clock3, Menu, X, ArrowUpRight, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { Search, Play, ChevronRight, ChevronLeft, Sparkles, Film, Clapperboard, Music2, Tv, Gamepad2, BookOpen, Radio, Compass, Bookmark, Clock3, Menu, X, ArrowUpRight, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 
 type Item = { id: string; title: string; category: string; kind: string; description: string; image: string; source: string; featured?: boolean; year?: string; duration?: string; };
 
@@ -133,7 +133,6 @@ export default function Home() {
       <div className="side-label">YOUR SPACE</div>
       <button className={`nav-item ${active==="My Collection"?"nav-active":""}`} title="My Collection" onClick={()=>{setActive("My Collection");setQuery("");setMobileOpen(false)}}><Bookmark size={18}/><span>My Collection</span></button>
       <button className={`nav-item ${active==="Recently Watched"?"nav-active":""}`} title="Recently Watched" onClick={()=>{setActive("Recently Watched");setQuery("");setMobileOpen(false)}}><Clock3 size={18}/><span>Recently Watched</span></button>
-      <Link href="/extract" className="nav-item" title="Clip Extract"><ScanSearch size={18}/><span>Clip Extract</span></Link>
       <div className="sidebar-bottom"><div className="upgrade-card"><Sparkles size={18}/><strong>Your next favourite is waiting.</strong><span>Explore something unexpected today.</span></div><Link href="/admin" className="admin-link">Creator studio <ArrowUpRight size={14}/></Link><span className="copyright">© 2026 PLAYVERSE</span></div>
     </aside>
     {mobileOpen && <button className="scrim" onClick={()=>setMobileOpen(false)} aria-label="Close menu"/>}
