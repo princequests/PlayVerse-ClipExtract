@@ -137,6 +137,8 @@ export default function WatchPlayer({sources,title,poster,contentKind="",caption
  const [dmRate,setDmRate]=useState(1);
 
  const [theatre,setTheatre]=useState(false);
+ const [aspectOverride,setAspectOverride]=useState<"16:9"|"9:16"|null>(null);
+ const [detectedPortrait,setDetectedPortrait]=useState<boolean|null>(null);
  const [showSeries,setShowSeries]=useState(false);
  const [overlayVisible,setOverlayVisible]=useState(true);
  const overlayTimer=useRef<ReturnType<typeof setTimeout>|null>(null);
@@ -165,7 +167,18 @@ export default function WatchPlayer({sources,title,poster,contentKind="",caption
  const isDailymotionPlayer=player?.kind==="dailymotion"||(player?.kind==="iframe"&&(/dailymotion/i.test(source?.provider||"")||/geo\.dailymotion\.com/i.test(player.src)));
  const socialProvider=(source?.provider||"").toLowerCase();
  const isSocialPlayer=player?.kind==="iframe"&&/(facebook|instagram|tiktok|^x$|twitter)/i.test(socialProvider);
- const isPortraitSource=isSocialPlayer&&(/instagram|tiktok/i.test(socialProvider)||(/facebook/i.test(socialProvider)&&Boolean(facebookEmbed&&facebookEmbed.ratio<.85))||/\/(?:reel|reels|shorts)\//i.test(source?.url||""));
+ const sourceUrl=source?.url||"";
+ const urlSuggestsPortrait=/(?:tiktok\.com|\/(?:reel|reels|shorts)\/|youtube\.com\/shorts\/)/i.test(sourceUrl)||/instagram/i.test(socialProvider);
+ const inferredPortrait=detectedPortrait??(urlSuggestsPortrait||(/facebook/i.test(socialProvider)&&Boolean(facebookEmbed&&facebookEmbed.ratio<.85))||/short/i.test(contentKind));
+ const isPortraitSource=aspectOverride?aspectOverride==="9:16":inferredPortrait;
+ useEffect(()=>{setDetectedPortrait(null);},[source?.id,source?.url]);
+ useEffect(()=>{
+   if(!poster)return;
+   const image=new Image();
+   image.onload=()=>{if(image.naturalWidth&&image.naturalHeight)setDetectedPortrait(current=>current===null?image.naturalHeight>image.naturalWidth*1.05:current);};
+   image.src=poster;
+   return()=>{image.onload=null;};
+ },[poster]);
  const iframeRef=useRef<HTMLIFrameElement>(null);
  const videoRef=useRef<HTMLVideoElement>(null);
  const directVideoRef=useRef<HTMLVideoElement>(null);
@@ -192,6 +205,7 @@ export default function WatchPlayer({sources,title,poster,contentKind="",caption
  const toggleDirectPlayback=()=>{const v=directVideoRef.current||videoRef.current;if(!v)return;if(v.paused){void v.play();}else{v.pause();}};
  const seekDirect=(value:number)=>{const v=directVideoRef.current||videoRef.current;if(v&&Number.isFinite(v.duration)){v.currentTime=(value/100)*v.duration;setProgress(value);}};
  const syncDirectTime=(v:HTMLVideoElement)=>{
+   if(v.videoWidth>0&&v.videoHeight>0)setDetectedPortrait(v.videoHeight>v.videoWidth*1.05);
    setProgress(v.duration?100*v.currentTime/v.duration:0);
    setDuration(Number.isFinite(v.duration)?v.duration:0);
    if(captionsEnabled&&captionTrackId){
@@ -314,7 +328,7 @@ export default function WatchPlayer({sources,title,poster,contentKind="",caption
    else setFailed(true);
  },[player]);
  return <div className="watch-player-wrap">
-  <div className={`watch-player${theatre?" theatre-mode":""}${isSocialPlayer?" social-source-player":""}${isPortraitSource?" is-portrait-source":""}`} style={isSocialPlayer&&socialProvider.includes("facebook")&&facebookEmbed?{aspectRatio:String(facebookEmbed.ratio)}:undefined} ref={playerRef} onPointerMove={revealOverlay} onPointerEnter={revealOverlay} onMouseMove={revealOverlay} onMouseEnter={revealOverlay} >
+  <div className={`watch-player${theatre?" theatre-mode":""}${isSocialPlayer?" social-source-player":""}${isPortraitSource?" is-portrait-source":""}`} style={{aspectRatio:isPortraitSource?"9 / 16":"16 / 9"}} ref={playerRef} onPointerMove={revealOverlay} onPointerEnter={revealOverlay} onMouseMove={revealOverlay} onMouseEnter={revealOverlay} >
    {!source?<div className="player-message"><AlertCircle/><p>No playback source has been added for this title.</p></div>:
     player?.kind==="dailymotion"?<DailymotionPlayer playerId={player.playerId} videoId={player.videoId} playlistId={player.playlistId} onPlayerReady={handleDailymotionReady} onPlayerState={handleDailymotionState} />:
     player?.kind==="iframe"?<div className={`${isSocialPlayer?"social-provider-frame social-"+(socialProvider.includes("facebook")?"facebook":socialProvider.includes("instagram")?"instagram":socialProvider.includes("tiktok")?"tiktok":"x"):!isVimeoPlayer&&!isDailymotionPlayer?"youtube-player-frame":"vimeo-player-frame"} provider-player-frame${isDailymotionPlayer?" dailymotion-player-frame":""}`}>
@@ -360,6 +374,7 @@ export default function WatchPlayer({sources,title,poster,contentKind="",caption
    </div>
    <div className="playverse-nav-right">
     {seriesEntries.length>0?<div className="player-series-menu"><button type="button" className="player-tool" onClick={()=>setShowSeries(value=>!value)} aria-expanded={showSeries}><ListVideo size={16}/> {listTitle||"Episodes"}</button>{showSeries&&<div className="player-series-popover"><strong>{seriesTitle||"Episodes"}</strong>{seriesEntries.map(entry=><Link key={entry.id} href={`/watch/${entry.id}`}>{entry.title}<span>{entry.kind}</span></Link>)}</div>}</div>:null}
+    <button type="button" className="player-tool" onClick={()=>setAspectOverride(isPortraitSource?"16:9":"9:16")} title={isPortraitSource?"Switch to 16:9 landscape":"Switch to 9:16 portrait"} aria-label="Change video frame ratio">{isPortraitSource?"9:16":"16:9"}</button>
     <button type="button" className={`player-tool${theatre?" active":""}`} onClick={toggleTheatre}><Theater size={16}/> Theatre</button>
     <button type="button" className="player-tool" onClick={openFullscreen}><Maximize2 size={16}/> Fullscreen</button>
    </div>
@@ -384,6 +399,7 @@ export default function WatchPlayer({sources,title,poster,contentKind="",caption
       {!dmApiReady&&<span className="dm-control-note">Native controls remain available in the video</span>}
     </div>
     <div className="dailymotion-controls-actions">
+      <button type="button" className="dailymotion-control-button" onClick={()=>setAspectOverride(isPortraitSource?"16:9":"9:16")} title={isPortraitSource?"Switch to 16:9 landscape":"Switch to 9:16 portrait"} aria-label="Change video frame ratio"><span>{isPortraitSource?"9:16":"16:9"}</span></button>
       {previousHref && <Link href={previousHref} className="dailymotion-control-button" title="Previous video"><ChevronLeft size={17}/><span>Previous</span></Link>}
       {seriesEntries.length > 0 && <div className="dailymotion-controls-menu-wrap">
         <button type="button" className="dailymotion-control-button" onClick={() => setShowSeries(value => !value)} aria-expanded={showSeries}><ListVideo size={17}/><span>Playlist</span></button>
