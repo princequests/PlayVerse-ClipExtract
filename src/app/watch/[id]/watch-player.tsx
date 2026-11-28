@@ -367,7 +367,7 @@ export default function WatchPlayer({sources,title,poster,contentKind="",caption
    <div className={`pv-player-stage ${isPortraitSource?"pv-portrait":"pv-landscape"}`}>
     {!source?<div className="pv-player-empty"><AlertCircle/><strong>No playback source</strong><p>This title has not been given a playable source yet.</p></div>:
      player?.kind==="iframe"?<div className={`pv-provider-stage ${isExternalDailymotion?"pv-external-player-container":""}`}>
-       <iframe ref={iframeRef} key={source.id} src={socialProvider.includes("facebook")?(facebookEmbed?.src||player.src):player.src} title={title} sandbox={socialProvider.includes("facebook")?"allow-scripts allow-same-origin allow-presentation":undefined} allow="autoplay; encrypted-media; picture-in-picture; fullscreen; web-share" allowFullScreen referrerPolicy="strict-origin-when-cross-origin"/>
+       <iframe ref={iframeRef} key={source.id} src={socialProvider.includes("facebook")?(facebookEmbed?.src||player.src):player.src} title={title} sandbox="allow-scripts allow-same-origin allow-presentation" allow="autoplay; encrypted-media; picture-in-picture; fullscreen; web-share" allowFullScreen referrerPolicy="strict-origin-when-cross-origin"/>
        {(/youtube/i.test(source?.provider||"")||/youtube\.com\/embed/i.test(player.src))&&<div className="playverse-provider-title-shield" aria-hidden="true"/>}
        {isVimeoPlayer&&<div className="playverse-vimeo-surface" onPointerMove={revealOverlay} onPointerEnter={revealOverlay} onClick={()=>void toggleVimeoPlayback()} aria-label="Tap to play or pause" role="button" tabIndex={0} onKeyDown={event=>{if(event.key===" "||event.key==="Enter"){event.preventDefault();void toggleVimeoPlayback();}}}/>}
       </div>:
