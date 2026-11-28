@@ -125,6 +125,21 @@ export async function GET(request: NextRequest) {
       // Use the official Facebook video plugin below as a resilient fallback.
     }
 
+    // Normalize Facebook's plugin options regardless of whether the URL came
+    // from oEmbed or the fallback. Hide post text and native recommendation UI
+    // where Facebook honors the embed flags; sandboxing in the watch page also
+    // prevents recommendation links from navigating the PlayVerse tab.
+    if (embedSrc) {
+      const normalizedEmbed = new URL(embedSrc);
+      if (isFacebookUrl(normalizedEmbed) && /\/plugins\/video\.php$/i.test(normalizedEmbed.pathname)) {
+        normalizedEmbed.searchParams.set("show_text", "0");
+        normalizedEmbed.searchParams.set("autoplay", "1");
+        normalizedEmbed.searchParams.set("controls", "0");
+        normalizedEmbed.searchParams.set("width", "720");
+        embedSrc = normalizedEmbed.toString();
+      }
+    }
+
     // Crucial fallback: always embed the resolved permalink, never the original
     // /share/v/ URL. This is what fixes public share links that oEmbed rejects.
     if (!embedSrc || /\/share\//i.test(embedSrc)) {
